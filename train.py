@@ -9,22 +9,6 @@ from utils import *
 
 num_layers = 1
 
-# def indexesFromTokens(lang, tokens):
-#     return [lang.token2index[token] for token in tokens]
-
-
-# def tensorFromTokens(lang, tokens):
-#     indexes = indexesFromTokens(lang, tokens)
-#     indexes.append(EOS_token)
-#     # while len(indexes) < MAX_LENGTH:
-#     #     indexes.append(PAD_token)
-#     return torch.tensor(indexes, dtype=torch.long, device=device)
-
-# def tensorsFromPair(lang, pair):
-#     input_tensor = tensorFromTokens(lang, pair[0])
-#     target_tensor = tensorFromTokens(lang, pair[1])
-#     return (input_tensor, target_tensor)
-
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
@@ -36,9 +20,6 @@ class Build_Data(Dataset):
 
     def __getitem__(self, index):
         return {'question': valid_mwps[index].full_question, 'formula': valid_mwps[index].target, 'answer': valid_mwps[index].answer}
-        input_tensor = tensorFromTokens(q_lang, self.x[index])
-        target_tensor = tensorFromTokens(a_lang, self.y[index])
-        return input_tensor, target_tensor
 
     def __len__(self):
         return self.len
@@ -52,14 +33,15 @@ print(train_loader)
 
 teacher_forcing_ratio = 0.9
 
-def train(input_tensor, target_tensor, input_lengths, target_lengths, encoder, decoder, encoder_optimiser, decoder_optimiser, criterion):
+def train(input_tensor, target_tensor, input_lengths, target_lengths, embedding, encoder, decoder, embedding_optimiser, encoder_optimiser, decoder_optimiser, criterion):
     batch_size = input_tensor.shape[1]
-    # encoder_hidden = None # encoder.init_hidden(batch_size=batch_size)
 
+    embedding_optimiser.zero_grad()
     encoder_optimiser.zero_grad()
     decoder_optimiser.zero_grad()
 
     sorted_input, sorted_lengths, restore_indexes = sort_by_length(input_tensor, input_lengths)
+    sorted_input = embedding(sorted_input)
     encoder_outputs, encoder_hidden = encoder(sorted_input, sorted_lengths, restore_indexes)
 
     loss = 0
@@ -86,6 +68,7 @@ def train(input_tensor, target_tensor, input_lengths, target_lengths, encoder, d
     
     loss.backward()
 
+    embedding_optimiser.step()
     encoder_optimiser.step()
     decoder_optimiser.step()
 
@@ -104,11 +87,12 @@ def timeSince(since, percent):
     rs = es - s
     return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
 
-def trainIters(encoder, decoder, n_iters, print_every=1000, learning_rate=0.0005):
+def trainIters(embedding, encoder, decoder, n_iters, print_every=1000, learning_rate=0.0005):
     start = time.time()
     print_loss_total = 0
 
-    encoder_optimiser = torch.optim.Adam(encoder.parameters(), lr=learning_rate) #adam
+    embedding_optimiser = torch.optim.Adam(embedding.parameters(), lr=learning_rate)
+    encoder_optimiser = torch.optim.Adam(encoder.parameters(), lr=learning_rate)
     decoder_optimiser = torch.optim.Adam(decoder.parameters(), lr=learning_rate)
     criterion = torch.nn.NLLLoss()
 
@@ -118,9 +102,8 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, learning_rate=0.0005
         for mwp in train_loader:
             input_tensor, target_tensor, input_lengths, target_lengths, numbers = indexesFromPairs(mwp['question'], mwp['formula'])
             count += 1
-            # input_tensor = torch.transpose(input_tensor, 0, 1)
-            # target_tensor = torch.transpose(target_tensor, 0, 1)
-            loss = train(input_tensor, target_tensor, input_lengths, target_lengths, encoder, decoder, encoder_optimiser, decoder_optimiser, criterion)
+
+            loss = train(input_tensor, target_tensor, input_lengths, target_lengths, embedding, encoder, decoder, embedding_optimiser, encoder_optimiser, decoder_optimiser, criterion)
             print_loss_total += loss
 
             if count % print_every == 0:
@@ -130,10 +113,11 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, learning_rate=0.0005
 
 # embedding_size = 300
 hidden_size = 256
+embedding = Embedding(q_lang.n_tokens, EMBEDDING_SIZE, q_weights_matrix).to(device)
 encoder = Encoder(q_lang.n_tokens, EMBEDDING_SIZE, hidden_size, num_layers=num_layers).to(device)
 attn_decoder = Decoder(a_lang.n_tokens, EMBEDDING_SIZE, hidden_size, num_layers=num_layers).to(device)
 
-trainIters(encoder, attn_decoder, 50, print_every=100)
+trainIters(embedding, encoder, attn_decoder, 50, print_every=100)
 
 torch.save(encoder, 'asdiv-baseline-encoder.pt')
 torch.save(attn_decoder, 'asdiv-baseline-attndecoder.pt')
