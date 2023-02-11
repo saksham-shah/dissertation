@@ -5,7 +5,7 @@ import time
 from models.embedding import Embedding
 from models.encoder import Encoder
 from models.decoder import Decoder
-from utils import *
+from utils.prepare_tensors import *
 
 num_layers = 1
 
@@ -14,8 +14,8 @@ from torch.utils.data import DataLoader
 
 class Build_Data(Dataset):
     def __init__(self):
-        self.x = [mwp.q_tokens for mwp in valid_mwps]
-        self.y = [mwp.a_tokens for mwp in valid_mwps]
+        # self.x = [mwp.q_tokens for mwp in valid_mwps]
+        # self.y = [mwp.a_tokens for mwp in valid_mwps]
         self.len = len(valid_mwps)
 
     def __getitem__(self, index):
@@ -117,7 +117,8 @@ embedding = Embedding(q_lang.n_tokens, EMBEDDING_SIZE, q_weights_matrix).to(devi
 encoder = Encoder(q_lang.n_tokens, EMBEDDING_SIZE, hidden_size, num_layers=num_layers).to(device)
 attn_decoder = Decoder(a_lang.n_tokens, EMBEDDING_SIZE, hidden_size, num_layers=num_layers).to(device)
 
-trainIters(embedding, encoder, attn_decoder, 50, print_every=100)
+trainIters(embedding, encoder, attn_decoder, 1, print_every=100)
 
+torch.save(embedding, 'asdiv-baseline-embedding.pt')
 torch.save(encoder, 'asdiv-baseline-encoder.pt')
 torch.save(attn_decoder, 'asdiv-baseline-attndecoder.pt')

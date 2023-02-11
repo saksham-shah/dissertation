@@ -14,7 +14,7 @@ def tensorFromTokens(lang, tokens):
     #     indexes.append(PAD_token)
     return torch.tensor(indexes, dtype=torch.long, device=device).view(-1, 1)
 
-def evaluate(encoder, decoder, tokens, max_length = 120):
+def evaluate(embedding, encoder, decoder, tokens, max_length = 120):
     with torch.no_grad():
         input_tensor = tensorFromTokens(q_lang, tokens)
         input_length = input_tensor.size()[0]
@@ -26,6 +26,7 @@ def evaluate(encoder, decoder, tokens, max_length = 120):
         #     encoder_output, encoder_hidden = encoder(input_tensor[ei], encoder_hidden)
         #     encoder_outputs[ei] += encoder_output[0, 0]
         
+        input_tensor = embedding(input_tensor)
         encoder_outputs, encoder_hidden = encoder(input_tensor, [input_length], torch.LongTensor([0], device=device))
 
         decoder_input = torch.tensor([SOS_token], device=device)  # SOS
@@ -51,29 +52,31 @@ def evaluate(encoder, decoder, tokens, max_length = 120):
 
         return decoded_words, decoder_attentions[:di + 1]
 
-def evaluateRandomly(encoder, decoder, n=10):
+def evaluateRandomly(embedding, encoder, decoder, n=10):
     for i in range(n):
         mwp = random.choice(valid_mwps)
         print('>', ' '.join(mwp.q_tokens))
         print('=', ' '.join(mwp.a_tokens))
-        output_words, attentions = evaluate(encoder, decoder, mwp.q_tokens)
+        output_words, attentions = evaluate(embedding, encoder, decoder, mwp.q_tokens)
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
         print('')
 
-def accuracy(encoder, decoder):
+def accuracy(embedding, encoder, decoder):
     correct = 0
     for mwp in valid_mwps:
-        output_words, attentions = evaluate(encoder, decoder, mwp.q_tokens)
+        q_tokens, a_tokens, _ = tokensFromMWP(mwp.full_question, mwp.target)
+        output_words, attentions = evaluate(embedding, encoder, decoder, q_tokens)
         output_sentence = ' '.join(output_words)
-        target_sentence = ' '.join(mwp.a_tokens) + ' <EOS>'
+        target_sentence = ' '.join(a_tokens) + ' <EOS>'
         if output_sentence == target_sentence:
             correct += 1
         print(target_sentence, output_sentence)
     print("Accuracy:", correct / len(valid_mwps))
 
+embedding = torch.load('asdiv-baseline-embedding.pt', map_location=device)
 encoder = torch.load('asdiv-baseline-encoder.pt', map_location=device)
 attn_decoder = torch.load('asdiv-baseline-attndecoder.pt', map_location=device)
 
 # evaluateRandomly(encoder, attn_decoder)
-accuracy(encoder, attn_decoder)
+accuracy(embedding, encoder, attn_decoder)

@@ -3,6 +3,7 @@ import re
 from word2number import w2n
 from torchtext.vocab import GloVe
 import numpy as np
+from utils.process_input import *
 
 global_vectors = GloVe(name='6B', dim=300)
 
@@ -17,31 +18,6 @@ chars = []
 
 with open('data\\asdiv_a.txt') as file:
     asdiv_a_ids = [line.rstrip() for line in file]
-
-def tokenise_question(s):
-    s = s.lower()
-    s = re.sub(r"([?$])", r" \1 ", s)
-    # s = re.sub(r" ?([.,]) ?", r" \1 ", s)
-    s = re.sub(r"([.,])([^0-9])", r" \1 \2", s)
-    # s = re.sub(r"([.,])([^0-9])", r" \1 \2", s)
-    s = re.sub(r" +", r" ", s)
-    return s.strip().split(" ")
-
-def tokenise_formula(s):
-    s = re.sub(r"([()+\-*/=])", r" \1 ", s)
-    s = re.sub(r" +", r" ", s)
-    return s.strip().split(" ")
-
-def string_to_float(s):
-    try:
-        return float(s)
-    except ValueError:
-        try:
-            return float(w2n.word_to_num(s))
-        except ValueError:
-            if "," in s and len(s) > 1:
-                return string_to_float(re.sub(r",", r"", s))
-            return None
 
 class MWP:
     def __init__(self, xml_problem):
@@ -63,12 +39,12 @@ class MWP:
 
         self.target = self.formula.split('=')[0]
 
-        self.q_tokens = tokenise_question(self.full_question)
-        self.a_tokens = tokenise_formula(self.target)
+        # self.q_tokens = tokenise_question(self.full_question)
+        # self.a_tokens = tokenise_formula(self.target)
 
         self.answer = float(re.sub(r" \(.+\)", r"", self.answer))
 
-        if self.valid:
+        # if self.valid:
             # try:
             #     if float(self.split[1]) != self.answer:
             #         print("ASDASDASDASD", self.split[1], self.answer)
@@ -77,19 +53,19 @@ class MWP:
             #     print(self.split[1], self.answer)
                 
 
-            for i in range(len(self.q_tokens)):
-                num = string_to_float(self.q_tokens[i])
-                if num is not None:
-                    if num not in self.numbers:
-                        self.numbers.append(num)
-                        self.q_tokens[i] = "#" + str(len(self.numbers) - 1)
-                    else:
-                        print(self.q_tokens)
+            # for i in range(len(self.q_tokens)):
+            #     num = string_to_float(self.q_tokens[i])
+            #     if num is not None:
+            #         if num not in self.numbers:
+            #             self.numbers.append(num)
+            #             self.q_tokens[i] = "#" + str(len(self.numbers) - 1)
+            #         else:
+            #             print(self.q_tokens)
             
-            for i in range(len(self.a_tokens)):
-                num = string_to_float(self.a_tokens[i])
-                if num is not None and num in self.numbers:
-                        self.a_tokens[i] = "#" + str(self.numbers.index(num))
+            # for i in range(len(self.a_tokens)):
+            #     num = string_to_float(self.a_tokens[i])
+            #     if num is not None and num in self.numbers:
+            #             self.a_tokens[i] = "#" + str(self.numbers.index(num))
 
             # if len(self.numbers) != 2:
             #     self.valid = False
@@ -154,15 +130,17 @@ for key in mwps:
     if mwps[key].valid:
         count += 1
 
-        q_lang.addTokens(mwps[key].q_tokens)
-        a_lang.addTokens(mwps[key].a_tokens)
+        q_tokens, a_tokens, _ = tokensFromMWP(mwps[key].full_question, mwps[key].target)
+
+        q_lang.addTokens(q_tokens)
+        a_lang.addTokens(a_tokens)
 
         valid_mwps.append(mwps[key])
 
-        if (len(mwps[key].q_tokens) > Q_MAX_LENGTH):
-            Q_MAX_LENGTH = len(mwps[key].q_tokens)
-        if (len(mwps[key].a_tokens) > A_MAX_LENGTH):
-            A_MAX_LENGTH = len(mwps[key].q_tokens)
+        if (len(q_tokens) > Q_MAX_LENGTH):
+            Q_MAX_LENGTH = len(q_tokens)
+        if (len(a_tokens) > A_MAX_LENGTH):
+            A_MAX_LENGTH = len(q_tokens)
 
 Q_MAX_LENGTH = 100
 A_MAX_LENGTH = 30
