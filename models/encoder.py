@@ -5,15 +5,15 @@ import torch.nn.functional as F
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Encoder(nn.Module):
-    def __init__(self, input_size, embedding_size, hidden_size, num_layers=1, dropout=0.1):
+    def __init__(self, config, embedding_size):
         super(Encoder, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
+        self.hidden_size = config["hidden_size"]
+        self.num_layers = config["num_layers"]
 
         # self.embedding = nn.Embedding(input_size, embedding_size)
         # if weights_matrix is not None:
         #     self.embedding.weight.data.copy_(torch.from_numpy(weights_matrix))
-        self.lstm = nn.LSTM(embedding_size, hidden_size, num_layers=num_layers, dropout=0 if num_layers == 1 else dropout, bidirectional=True)
+        self.lstm = nn.LSTM(embedding_size, self.hidden_size, num_layers=self.num_layers, dropout=0 if self.num_layers == 1 else config["dropout"], bidirectional=config["bidirectional"])
 
     def forward(self, embedded, input_lengths, restore_indexes, hidden=None):
         # embedded = self.embedding(inputs)
