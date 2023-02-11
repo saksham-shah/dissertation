@@ -2,39 +2,9 @@ import torch
 import math
 import random
 import time
-from models.embedding import Embedding
-from models.encoder import Encoder
-from models.decoder import Decoder
 from utils.prepare_tensors import *
-from config import *
-
-# num_layers = 1
-
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-
-class Build_Data(Dataset):
-    def __init__(self):
-        # self.x = [mwp.q_tokens for mwp in valid_mwps]
-        # self.y = [mwp.a_tokens for mwp in valid_mwps]
-        self.len = len(valid_mwps)
-
-    def __getitem__(self, index):
-        return {'question': valid_mwps[index].full_question, 'formula': valid_mwps[index].target, 'answer': valid_mwps[index].answer}
-
-    def __len__(self):
-        return self.len
-
-# BATCH_SIZE = 8
-
-def batch_data(config):
-    dataset = Build_Data()
-    train_loader = DataLoader(dataset, batch_size=config["batch_size"])
-    return train_loader
-
-# print(train_loader)
-
-# teacher_forcing_ratio = 0.9
+from utils.load_batches import *
+from evaluate import *
 
 def train(config, input_tensor, target_tensor, input_lengths, target_lengths, embedding, encoder, decoder, embedding_optimiser, encoder_optimiser, decoder_optimiser, criterion):
     batch_size = input_tensor.shape[1]
@@ -90,6 +60,8 @@ def timeSince(since, percent):
     rs = es - s
     return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
 
+# def validate
+
 def trainIters(config, embedding, encoder, decoder, n_iters, print_every=1000):
     start = time.time()
     print_loss_total = 0
@@ -103,7 +75,10 @@ def trainIters(config, embedding, encoder, decoder, n_iters, print_every=1000):
 
     count = 0
 
-    train_loader = batch_data(config)
+    max_acc = 0
+    epoch_since_improvement = 0
+
+    train_loader, test = train_test(config, valid_mwps)
 
     for iter in range(1, n_iters + 1):
         for mwp in train_loader:
@@ -117,15 +92,23 @@ def trainIters(config, embedding, encoder, decoder, n_iters, print_every=1000):
                 print_loss_avg = print_loss_total / print_every
                 print_loss_total = 0
                 print('%s (%d %d%%) %.4f' % (timeSince(start, count / n_iters / len(train_loader)), count, count / n_iters / len(train_loader) * 100, print_loss_avg))
+        
+        correct = 0
+        for mwp in test:
+            q_tokens, a_tokens, _ = tokensFromMWP(mwp.full_question, mwp.target)
+            output_words, attentions = evaluate(embedding, encoder, decoder, q_tokens)
+            if check(output_words, a_tokens):
+                correct += 1
+            
+        acc = correct / len(test)
+        print ("%s epoch: %d, accurary: %.4f" % (timeSince(start, count / n_iters / len(train_loader)), iter, acc))
 
-# embedding_size = 300
-# hidden_size = 256
-embedding = Embedding(config, q_lang.n_tokens, EMBEDDING_SIZE, q_weights_matrix).to(device)
-encoder = Encoder(config, EMBEDDING_SIZE).to(device)
-attn_decoder = Decoder(config, a_lang.n_tokens, EMBEDDING_SIZE).to(device)
+        if acc > max_acc:
+            max_acc = acc
+        else:
+            epoch_since_improvement += 1
+        
+        if config["early_stopping"] >= 0 and epoch_since_improvement > config["early_stopping"]:
+            print("Early stopping at Epoch %d, after no improvement in %d epochs" % (iter, epoch_since_improvement))
+            break
 
-trainIters(config, embedding, encoder, attn_decoder, 1, print_every=100)
-
-torch.save(embedding, 'asdiv-baseline-embedding.pt')
-torch.save(encoder, 'asdiv-baseline-encoder.pt')
-torch.save(attn_decoder, 'asdiv-baseline-attndecoder.pt')
