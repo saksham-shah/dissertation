@@ -6,5 +6,6 @@ config = {
     "hidden_size": 256,
     "bidirectional": True,
     "dropout": 0.1,
-    "early_stopping": 5
+    "early_stopping": 5,
+    "rpn": True
 }

@@ -82,7 +82,7 @@ def trainIters(config, embedding, encoder, decoder, n_iters, print_every=1000):
 
     for iter in range(1, n_iters + 1):
         for mwp in train_loader:
-            input_tensor, target_tensor, input_lengths, target_lengths, numbers = indexesFromPairs(mwp['question'], mwp['formula'])
+            input_tensor, target_tensor, input_lengths, target_lengths, numbers = indexesFromPairs(mwp['question'], mwp['formula'], config["rpn"])
             count += 1
 
             loss = train(config, input_tensor, target_tensor, input_lengths, target_lengths, embedding, encoder, decoder, embedding_optimiser, encoder_optimiser, decoder_optimiser, criterion)
@@ -97,7 +97,7 @@ def trainIters(config, embedding, encoder, decoder, n_iters, print_every=1000):
         for mwp in test:
             q_tokens, a_tokens, _ = tokensFromMWP(mwp.full_question, mwp.target)
             output_words, attentions = evaluate(embedding, encoder, decoder, q_tokens)
-            if check(output_words, a_tokens):
+            if check(config, output_words, a_tokens):
                 correct += 1
             
         acc = correct / len(test)
@@ -105,10 +105,13 @@ def trainIters(config, embedding, encoder, decoder, n_iters, print_every=1000):
 
         if acc > max_acc:
             max_acc = acc
+            epoch_since_improvement = 0
         else:
             epoch_since_improvement += 1
         
         if config["early_stopping"] >= 0 and epoch_since_improvement > config["early_stopping"]:
             print("Early stopping at Epoch %d, after no improvement in %d epochs" % (iter, epoch_since_improvement))
             break
+    
+    return max_acc, acc, iter
 

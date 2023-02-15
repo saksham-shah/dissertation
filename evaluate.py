@@ -2,6 +2,7 @@ import torch
 from data import *
 import random
 from utils.prepare_tensors import *
+from utils.rpn import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -58,20 +59,24 @@ def evaluateRandomly(embedding, encoder, decoder, n=10):
         print('<', output_sentence)
         print('')
 
-def check(output_tokens, target_tokens):
+def check(config, output_tokens, target_tokens):
+    if config["rpn"]:
+        target_tokens = infix_to_rpn(target_tokens)
     output_sentence = ' '.join(output_tokens)
     target_sentence = ' '.join(target_tokens) + ' <EOS>'
     return output_sentence == target_sentence
 
-def accuracy(embedding, encoder, decoder):
+def accuracy(config, embedding, encoder, decoder):
     correct = 0
     for mwp in valid_mwps:
         q_tokens, a_tokens, _ = tokensFromMWP(mwp.full_question, mwp.target)
         output_words, attentions = evaluate(embedding, encoder, decoder, q_tokens)
-        if check(output_words, a_tokens):
+
+        if check(config, output_words, a_tokens):
             correct += 1
 
         output_sentence = ' '.join(output_words)
         target_sentence = ' '.join(a_tokens) + ' <EOS>'
         print(target_sentence, output_sentence)
     print("Accuracy:", correct / len(valid_mwps))
+    return correct / len(valid_mwps)

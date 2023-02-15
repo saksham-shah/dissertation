@@ -1,5 +1,6 @@
 import torch
 from data import *
+from utils.process_input import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -22,8 +23,8 @@ def pad_indexes(indexes, max_length):
     indexes += [EOS_token for i in range(max_length - len(indexes))]
     return indexes
 
-def indexesFromPairs(questions, formulas):
-    all_tokens = [tokensFromMWP(question, formula) for question, formula in zip(questions, formulas)]
+def indexesFromPairs(questions, formulas, rpn=False):
+    all_tokens = [tokensFromMWP(question, formula, rpn=rpn) for question, formula in zip(questions, formulas)]
     q_indexes = [indexesFromTokens(q_lang, q) for q,_,_ in all_tokens]
     a_indexes = [indexesFromTokens(a_lang, a) for _,a,_ in all_tokens]
     numbers = [n for _,_,n in all_tokens]

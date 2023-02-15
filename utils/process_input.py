@@ -1,5 +1,6 @@
 import re
 from word2number import w2n
+from utils.rpn import *
 
 def string_to_float(s):
     try:
@@ -24,7 +25,7 @@ def tokenise_formula(s):
     s = re.sub(r" +", r" ", s)
     return s.strip().split(" ")
 
-def tokensFromMWP(question, formula):
+def tokensFromMWP(question, formula, rpn=False):
     q_tokens = tokenise_question(question)
     a_tokens = tokenise_formula(formula)
 
@@ -43,5 +44,8 @@ def tokensFromMWP(question, formula):
         num = string_to_float(a_tokens[i])
         if num is not None and num in numbers:
             a_tokens[i] = "#" + str(numbers.index(num))
+    
+    if rpn:
+        a_tokens = infix_to_rpn(a_tokens)
     
     return q_tokens, a_tokens, numbers
