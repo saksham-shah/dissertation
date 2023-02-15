@@ -7,7 +7,7 @@ from utils.process_input import *
 
 global_vectors = GloVe(name='6B', dim=300)
 
-tree = ET.parse('data\\asdiv.xml')
+tree = ET.parse('data/asdiv.xml')
 root = tree.getroot()
 
 mwps = {}
@@ -16,7 +16,7 @@ examples = {}
 
 chars = []
 
-with open('data\\asdiv_a.txt') as file:
+with open('data/asdiv_a.txt') as file:
     asdiv_a_ids = [line.rstrip() for line in file]
 
 class MWP:
