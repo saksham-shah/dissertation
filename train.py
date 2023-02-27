@@ -6,7 +6,7 @@ from utils.prepare_tensors import *
 from utils.load_batches import *
 from evaluate import *
 
-def train(config, input_tensor, target_tensor, input_lengths, target_lengths, embedding, encoder, decoder, embedding_optimiser, encoder_optimiser, decoder_optimiser, criterion):
+def train(config, input_tensor, target_tensor, input_lengths, target_lengths, numbers, embedding, encoder, decoder, embedding_optimiser, encoder_optimiser, decoder_optimiser, criterion):
     batch_size = input_tensor.shape[1]
 
     embedding_optimiser.zero_grad()
@@ -14,7 +14,7 @@ def train(config, input_tensor, target_tensor, input_lengths, target_lengths, em
     decoder_optimiser.zero_grad()
 
     sorted_input, sorted_lengths, restore_indexes = sort_by_length(input_tensor, input_lengths)
-    sorted_input = embedding(sorted_input)
+    sorted_input = embedding(sorted_input, numbers)
     encoder_outputs, encoder_hidden = encoder(sorted_input, sorted_lengths, restore_indexes)
 
     loss = 0
@@ -85,7 +85,7 @@ def trainIters(config, embedding, encoder, decoder, n_iters, print_every=1000):
             input_tensor, target_tensor, input_lengths, target_lengths, numbers = indexesFromPairs(mwp['question'], mwp['formula'], config["rpn"])
             count += 1
 
-            loss = train(config, input_tensor, target_tensor, input_lengths, target_lengths, embedding, encoder, decoder, embedding_optimiser, encoder_optimiser, decoder_optimiser, criterion)
+            loss = train(config, input_tensor, target_tensor, input_lengths, target_lengths, numbers, embedding, encoder, decoder, embedding_optimiser, encoder_optimiser, decoder_optimiser, criterion)
             print_loss_total += loss
 
             if count % print_every == 0:
@@ -95,8 +95,8 @@ def trainIters(config, embedding, encoder, decoder, n_iters, print_every=1000):
         
         correct = 0
         for mwp in test:
-            q_tokens, a_tokens, _ = tokensFromMWP(mwp.full_question, mwp.target)
-            output_words, attentions = evaluate(embedding, encoder, decoder, q_tokens)
+            q_tokens, a_tokens, numbers = tokensFromMWP(mwp.full_question, mwp.target)
+            output_words, attentions = evaluate(embedding, encoder, decoder, q_tokens, numbers)
             if check(config, output_words, a_tokens):
                 correct += 1
             

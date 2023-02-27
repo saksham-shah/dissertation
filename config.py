@@ -7,5 +7,6 @@ config = {
     "bidirectional": True,
     "dropout": 0.1,
     "early_stopping": 5,
-    "rpn": True
+    "rpn": True,
+    "num_emb": True
 }

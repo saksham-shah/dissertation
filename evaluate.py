@@ -19,12 +19,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #     tensor = torch.tensor(indexes, dtype=torch.long, device=device)
 #     return tensor
 
-def evaluate(embedding, encoder, decoder, tokens, max_length = 120):
+def evaluate(embedding, encoder, decoder, tokens, numbers=None, max_length = 120):
     with torch.no_grad():
         input_tensor = tensorFromTokens(q_lang, tokens).view(-1, 1)
         input_length = input_tensor.size()[0]
         
-        input_tensor = embedding(input_tensor)
+        input_tensor = embedding(input_tensor, [numbers])
         encoder_outputs, encoder_hidden = encoder(input_tensor, [input_length], torch.LongTensor([0], device=device))
 
         decoder_input = torch.tensor([SOS_token], device=device)  # SOS

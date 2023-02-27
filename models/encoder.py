@@ -10,6 +10,9 @@ class Encoder(nn.Module):
         self.hidden_size = config["hidden_size"]
         self.num_layers = config["num_layers"]
 
+        if config["num_emb"]:
+            embedding_size += 2
+
         # self.embedding = nn.Embedding(input_size, embedding_size)
         # if weights_matrix is not None:
         #     self.embedding.weight.data.copy_(torch.from_numpy(weights_matrix))
