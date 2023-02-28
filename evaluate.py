@@ -25,7 +25,7 @@ def evaluate(embedding, encoder, decoder, tokens, numbers=None, max_length = 120
         input_length = input_tensor.size()[0]
         
         input_tensor = embedding(input_tensor, numbers)
-        encoder_outputs, encoder_hidden = encoder(input_tensor, [input_length], torch.LongTensor([0], device=device))
+        encoder_outputs, encoder_hidden = encoder(input_tensor, [input_length], torch.tensor([0], device=device))
 
         decoder_input = torch.tensor([SOS_token], device=device)  # SOS
 

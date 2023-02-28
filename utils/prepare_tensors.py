@@ -35,19 +35,19 @@ def indexesFromPairs(questions, formulas, rpn=False):
     q_padded = [pad_indexes(q, max(q_lengths)) for q in q_indexes]
     a_padded = [pad_indexes(a, max(a_lengths)) for a in a_indexes]
 
-    q_tensor = torch.LongTensor(q_padded, device=device).transpose(0, 1)
-    a_tensor = torch.LongTensor(a_padded, device=device).transpose(0, 1)
+    q_tensor = torch.tensor(q_padded, device=device).transpose(0, 1)
+    a_tensor = torch.tensor(a_padded, device=device).transpose(0, 1)
 
     return q_tensor, a_tensor, q_lengths, a_lengths, numbers
 
 def sort_by_length(sequences, lengths):
     restore_indexes = list(range(sequences.size(1)))
 
-    sorted_indexes = torch.LongTensor(sorted(restore_indexes, key=lambda x: lengths[x], reverse=True), device=device)
+    sorted_indexes = torch.tensor(sorted(restore_indexes, key=lambda x: lengths[x], reverse=True), device=device)
     sorted_sequences = sequences.index_select(1, sorted_indexes)
     sorted_lengths = [lengths[i] for i in sorted_indexes]
 
-    restore_indexes = torch.LongTensor(sorted(restore_indexes, key=lambda x: sorted_indexes[x], reverse=True), device=device)
+    restore_indexes = torch.tensor(sorted(restore_indexes, key=lambda x: sorted_indexes[x], reverse=True), device=device)
 
     return sorted_sequences, sorted_lengths, restore_indexes
     
