@@ -16,7 +16,7 @@ for rpn in [True, False]:
         encoder = Encoder(config, EMBEDDING_SIZE).to(device)
         attn_decoder = Decoder(config, a_lang.n_tokens, EMBEDDING_SIZE).to(device)
 
-        max_acc, acc, iters = trainIters(config, embedding, encoder, attn_decoder, 20, print_every=100)
+        max_acc, acc, iters = trainIters(config, embedding, encoder, attn_decoder, 50, print_every=100)
 
         overall_acc = accuracy(config, embedding, encoder, attn_decoder)
 

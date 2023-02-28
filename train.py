@@ -96,7 +96,7 @@ def trainIters(config, embedding, encoder, decoder, n_iters, print_every=1000):
         correct = 0
         for mwp in test:
             q_tokens, a_tokens, numbers = tokensFromMWP(mwp.full_question, mwp.target)
-            output_words, attentions = evaluate(embedding, encoder, decoder, q_tokens, numbers)
+            output_words, attentions = evaluate(embedding, encoder, decoder, q_tokens, [numbers])
             if check(config, output_words, a_tokens):
                 correct += 1
             
