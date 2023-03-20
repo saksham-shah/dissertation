@@ -75,6 +75,9 @@ def accuracy(config, embedding, encoder, decoder):
         if check(config, output_words, a_tokens):
             correct += 1
 
+        if config["rpn"]:
+            a_tokens = infix_to_rpn(a_tokens)
+
         output_sentence = ' '.join(output_words)
         target_sentence = ' '.join(a_tokens) + ' <EOS>'
         print(target_sentence, output_sentence)

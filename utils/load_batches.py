@@ -20,7 +20,7 @@ def batch_data(config, mwps):
     train_loader = DataLoader(dataset, batch_size=config["batch_size"])
     return train_loader
 
-def train_test(config, mwps):
+def train_test(config, mwps, batch_test=False):
     random.seed(1)
     random.shuffle(mwps)
 
@@ -29,5 +29,8 @@ def train_test(config, mwps):
 
     train = batch_data(config, mwps[:boundary])
     test = mwps[boundary:]
+
+    if batch_test:
+        test = batch_data(config, test)
     
     return train, test

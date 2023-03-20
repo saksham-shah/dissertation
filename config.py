@@ -8,5 +8,5 @@ config = {
     "dropout": 0.1,
     "early_stopping": 5,
     "rpn": True,
-    "num_emb": True
+    "num_emb": False
 }
