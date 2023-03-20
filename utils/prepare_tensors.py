@@ -24,10 +24,15 @@ def pad_indexes(indexes, max_length):
     return indexes
 
 def indexesFromPairs(questions, formulas, rpn=False):
-    all_tokens = [tokensFromMWP(question, formula, rpn=rpn) for question, formula in zip(questions, formulas)]
-    q_indexes = [indexesFromTokens(q_lang, q) for q,_,_ in all_tokens]
-    a_indexes = [indexesFromTokens(a_lang, a) for _,a,_ in all_tokens]
-    numbers = [n for _,_,n in all_tokens]
+    # all_tokens = [tokensFromMWP(question, formula, rpn=rpn) for question, formula in zip(questions, formulas)]
+    # q_indexes = [indexesFromTokens(q_lang, q) for q,_,_ in all_tokens]
+    # a_indexes = [indexesFromTokens(a_lang, a) for _,a,_ in all_tokens]
+    # numbers = [n for _,_,n in all_tokens]
+
+    q_indexes = [indexesFromTokens(q_lang, q.split(" ")) for q in questions]
+    a_indexes = [indexesFromTokens(a_lang, a.split(" ")) for a in formulas]
+
+    numbers = []
 
     q_lengths = [len(q) for q in q_indexes]
     a_lengths = [len(a) for a in a_indexes]
@@ -47,7 +52,7 @@ def sort_by_length(sequences, lengths):
     sorted_sequences = sequences.index_select(1, sorted_indexes)
     sorted_lengths = [lengths[i] for i in sorted_indexes]
 
-    restore_indexes = torch.tensor(sorted(restore_indexes, key=lambda x: sorted_indexes[x], reverse=True), device=device)
+    restore_indexes = torch.tensor(sorted(restore_indexes, key=lambda x: sorted_indexes[x]), device=device)
 
     return sorted_sequences, sorted_lengths, restore_indexes
     

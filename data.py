@@ -1,99 +1,74 @@
 import xml.etree.ElementTree as ET
+import json
 import re
 from word2number import w2n
 from torchtext.vocab import GloVe
 import numpy as np
 from utils.process_input import *
+from config import *
 
 global_vectors = GloVe(name='6B', dim=300)
 
-tree = ET.parse('data/asdiv.xml')
-root = tree.getroot()
-
-mwps = {}
+mwps = []
 solution_types = []
 examples = {}
 
 chars = []
 
-with open('data/asdiv_a.txt') as file:
-    asdiv_a_ids = [line.rstrip() for line in file]
-
 class MWP:
-    def __init__(self, xml_problem):
-        self.body = xml_problem.find('Body').text
-        self.question = xml_problem.find('Question').text
-        self.solution_type = xml_problem.find('Solution-Type').text
-        self.answer = xml_problem.find('Answer').text
-        self.formula = xml_problem.find('Formula').text
+    def __init__(self, question, equation, answer):
+        q_tokens, a_tokens, numbers = tokensFromMWP(question, equation, rpn=config["rpn"])
 
-        self.valid = self.solution_type in ['Addition', 'Subtraction', 'Multiplication', 'Common-Division']
-        solution_attrib = xml_problem.find('Solution-Type').attrib
-        if 'UnitTrans' in solution_attrib:
-            self.valid = False
-            print("translation", self.body)
+        self.question = " ".join(q_tokens)
+        self.equation = " ".join(a_tokens)
+        self.answer = answer
+        self.numbers = ",".join(map(str, numbers))
 
-        self.numbers = []
+def MWP_from_asdiv(xml_problem):
+    body = xml_problem.find('Body').text
+    question = xml_problem.find('Question').text
+    solution_type = xml_problem.find('Solution-Type').text
+    answer = xml_problem.find('Answer').text
+    formula = xml_problem.find('Formula').text
 
-        self.full_question = self.body + self.question
+    if solution_type  not in ['Addition', 'Subtraction', 'Multiplication', 'Common-Division']:
+        return None
+    
+    solution_attrib = xml_problem.find('Solution-Type').attrib
+    if 'UnitTrans' in solution_attrib:
+        return None
 
-        self.target = self.formula.split('=')[0]
+    equation = formula.split('=')[0]
+    answer = float(re.sub(r" \(.+\)", r"", answer))
 
-        # self.q_tokens = tokenise_question(self.full_question)
-        # self.a_tokens = tokenise_formula(self.target)
+    question = body + question
+    question = re.sub(r"([?$])", r" \1 ", question)
+    question = re.sub(r"([.,])([^0-9])", r" \1 \2", question)
 
-        self.answer = float(re.sub(r" \(.+\)", r"", self.answer))
+    return MWP(question, equation, answer)
 
-        # if self.valid:
-            # try:
-            #     if float(self.split[1]) != self.answer:
-            #         print("ASDASDASDASD", self.split[1], self.answer)
-            # except ValueError:
-            #     print(self.solution_type)
-            #     print(self.split[1], self.answer)
-                
+# def MWP_from_mawps(mawps):
+    
 
-            # for i in range(len(self.q_tokens)):
-            #     num = string_to_float(self.q_tokens[i])
-            #     if num is not None:
-            #         if num not in self.numbers:
-            #             self.numbers.append(num)
-            #             self.q_tokens[i] = "#" + str(len(self.numbers) - 1)
-            #         else:
-            #             print(self.q_tokens)
-            
-            # for i in range(len(self.a_tokens)):
-            #     num = string_to_float(self.a_tokens[i])
-            #     if num is not None and num in self.numbers:
-            #             self.a_tokens[i] = "#" + str(self.numbers.index(num))
+if config["dataset"] == "asdiv":
+    with open('data/asdiv_a.txt') as file:
+        asdiv_a_ids = [line.rstrip() for line in file]
+    
+    tree = ET.parse('data/asdiv.xml')
+    root = tree.getroot()
 
-            # if len(self.numbers) != 2:
-            #     self.valid = False
-
-        for char in self.full_question:
-            if char not in chars:
-                chars.append(char)
-            
-            if char == ':':
-                print(self.full_question)
-
-        # if self.valid:
-        #     if self.solution_type not in solution_types:
-        #         solution_types.append(self.solution_type)
-        #         examples[self.solution_type] = self                
-
-for child in root:
-    if child.attrib['ID'] in asdiv_a_ids:
-        mwps[child.attrib['ID']] = MWP(child)
-
-def analyse_formula(formula, answer):
-    split_formula = formula.split('=')
-    # print(split_formula)
-
-    # answer = re.sub(r" \(.+\)", r"", answer)
-
-    if (float(split_formula[1]) != answer):
-        print(formula, "<"+answer+">", "<"+split_formula[1]+">")
+    for child in root:
+        if child.attrib['ID'] in asdiv_a_ids:
+            mwp = MWP_from_asdiv(child)
+            if mwp is not None:
+                mwps.append(mwp)
+elif config["dataset"] == "mawps":
+    with open('data/mawps.json') as file:
+        mawps = json.loads(file)
+        for mawps_q in mawps:
+            mwp = MWP_from_mawps(mawps_q)
+            if mwp is not None:
+                mwps.append(mwp)
 
 SOS_token = 0
 EOS_token = 1
@@ -121,37 +96,15 @@ class Lang:
 q_lang = Lang()
 a_lang = Lang()
 
-valid_mwps = []
+for mwp in mwps:
+    q_tokens, a_tokens, _ = tokensFromMWP(mwp.question, mwp.equation)
 
-count = 0
-Q_MAX_LENGTH = 0
-A_MAX_LENGTH = 0
-for key in mwps:
-    if mwps[key].valid:
-        count += 1
+    q_lang.addTokens(q_tokens)
+    a_lang.addTokens(a_tokens)
 
-        q_tokens, a_tokens, _ = tokensFromMWP(mwps[key].full_question, mwps[key].target)
+valid_mwps = mwps
 
-        q_lang.addTokens(q_tokens)
-        a_lang.addTokens(a_tokens)
-
-        valid_mwps.append(mwps[key])
-
-        if (len(q_tokens) > Q_MAX_LENGTH):
-            Q_MAX_LENGTH = len(q_tokens)
-        if (len(a_tokens) > A_MAX_LENGTH):
-            A_MAX_LENGTH = len(q_tokens)
-
-Q_MAX_LENGTH = 100
-A_MAX_LENGTH = 30
-
-        # for token in mwps[key].q_tokens:
-        #     if (',' in token or '.' in token) and len(token) > 1:
-            # if token == '':
-            #     print(token)
-            #     print(mwps[key].full_question)
-
-EMBEDDING_SIZE = 300
+EMBEDDING_SIZE = config["embedding_size"]
 
 q_weights_matrix = np.zeros((q_lang.n_tokens, EMBEDDING_SIZE))
 a_weights_matrix = np.zeros((a_lang.n_tokens, EMBEDDING_SIZE))
@@ -169,12 +122,3 @@ for i, token in enumerate(a_lang.token2index):
     a_weights_matrix[i] = embedding
   else:
     a_weights_matrix[i] = np.random.normal(scale=0.6, size=(EMBEDDING_SIZE, ))
-
-print(count)
-
-print("".join(chars))
-
-print(q_lang.n_tokens)
-print(a_lang.token2count)
-
-# REMOVED SYMBOLS: = ( ) & " : CHECK FOR MORE LATER

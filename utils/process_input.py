@@ -15,8 +15,6 @@ def string_to_float(s):
 
 def tokenise_question(s):
     s = s.lower()
-    s = re.sub(r"([?$])", r" \1 ", s)
-    s = re.sub(r"([.,])([^0-9])", r" \1 \2", s)
     s = re.sub(r" +", r" ", s)
     return s.strip().split(" ")
 

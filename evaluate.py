@@ -24,7 +24,7 @@ def evaluate(embedding, encoder, decoder, tokens, numbers=None, max_length = 120
         input_tensor = tensorFromTokens(q_lang, tokens).view(-1, 1)
         input_length = input_tensor.size()[0]
         
-        input_tensor = embedding(input_tensor, numbers)
+        input_tensor = embedding(input_tensor, numbers, torch.tensor([0], device=device))
         encoder_outputs, encoder_hidden = encoder(input_tensor, [input_length], torch.tensor([0], device=device))
 
         decoder_input = torch.tensor([SOS_token], device=device)  # SOS
@@ -69,7 +69,9 @@ def check(config, output_tokens, target_tokens):
 def accuracy(config, embedding, encoder, decoder):
     correct = 0
     for mwp in valid_mwps:
-        q_tokens, a_tokens, numbers = tokensFromMWP(mwp.full_question, mwp.target)
+        q_tokens, a_tokens, numbers = tokensFromMWP(mwp.question, mwp.equation)
+        q_tokens, a_tokens = mwp.question.split(" "), mwp.equation.split(" ")
+        numbers = list(map(float, mwp.numbers.split(",")))
         output_words, attentions = evaluate(embedding, encoder, decoder, q_tokens, [numbers])
 
         if check(config, output_words, a_tokens):
