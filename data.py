@@ -119,21 +119,21 @@ for mwp in mwps:
 
 valid_mwps = mwps
 
-EMBEDDING_SIZE = config["embedding_size"]
+embedding_size = config["embedding_size"]
 
-q_weights_matrix = np.zeros((q_lang.n_tokens, EMBEDDING_SIZE))
-a_weights_matrix = np.zeros((a_lang.n_tokens, EMBEDDING_SIZE))
+q_weights_matrix = np.zeros((q_lang.n_tokens, embedding_size))
+a_weights_matrix = np.zeros((a_lang.n_tokens, embedding_size))
 
 for i, token in enumerate(q_lang.token2index):
   embedding = global_vectors.get_vecs_by_tokens([token], lower_case_backup=True)[0]
   if embedding.norm() != 0:
     q_weights_matrix[i] = embedding
   else:
-    q_weights_matrix[i] = np.random.normal(scale=0.6, size=(EMBEDDING_SIZE, ))
+    q_weights_matrix[i] = np.random.normal(scale=0.6, size=(embedding_size, ))
 
 for i, token in enumerate(a_lang.token2index):
   embedding = global_vectors.get_vecs_by_tokens([token], lower_case_backup=True)[0]
   if embedding.norm() != 0:
     a_weights_matrix[i] = embedding
   else:
-    a_weights_matrix[i] = np.random.normal(scale=0.6, size=(EMBEDDING_SIZE, ))
+    a_weights_matrix[i] = np.random.normal(scale=0.6, size=(embedding_size, ))

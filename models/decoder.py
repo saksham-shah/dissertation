@@ -7,15 +7,15 @@ from models.attention import Attention
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Decoder(nn.Module):
-    def __init__(self, config, output_size, embedding_size, weights_matrix=None):
+    def __init__(self, config, output_size, weights_matrix=None):
         super(Decoder, self).__init__()
         self.hidden_size = config["hidden_size"]
         self.num_layers = config["num_layers"]
+        self.embedding_size = config["embedding_size"]
 
-        self.lstm = nn.LSTM(embedding_size, self.hidden_size, num_layers=self.num_layers, dropout=0 if self.num_layers == 1 else config["dropout"])
+        self.lstm = nn.LSTM(self.embedding_size, self.hidden_size, num_layers=self.num_layers, dropout=0 if self.num_layers == 1 else config["dropout"])
 
-        self.embedding_size = embedding_size
-        self.embedding = nn.Embedding(output_size, embedding_size)
+        self.embedding = nn.Embedding(output_size, self.embedding_size)
         if weights_matrix is not None:
             self.embedding.weight.data.copy_(torch.from_numpy(weights_matrix))
         self.embedding_dropout = nn.Dropout(config["dropout"])
