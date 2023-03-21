@@ -10,6 +10,7 @@ from config import *
 global_vectors = GloVe(name='6B', dim=300)
 
 mwps = []
+bad_mwps = []
 solution_types = []
 examples = {}
 
@@ -19,6 +20,12 @@ class MWP:
     def __init__(self, question, equation, answer):
         q_tokens, a_tokens, numbers = tokensFromMWP(question, equation, rpn=config["rpn"])
 
+        if q_tokens is None:
+            bad_mwps.append(question + " " + equation)
+            self.valid = False
+            return
+
+        self.valid = True
         self.question = " ".join(q_tokens)
         self.equation = " ".join(a_tokens)
         self.answer = answer
@@ -31,11 +38,13 @@ def MWP_from_asdiv(xml_problem):
     answer = xml_problem.find('Answer').text
     formula = xml_problem.find('Formula').text
 
-    if solution_type  not in ['Addition', 'Subtraction', 'Multiplication', 'Common-Division']:
+    if solution_type  not in ['Addition', 'Subtraction', 'Multiplication', 'Common-Division', 'Sum', 'Difference', 'TVQ-Initial', 'TVQ-Change', 'TVQ-Final']:
         return None
     
     solution_attrib = xml_problem.find('Solution-Type').attrib
     if 'UnitTrans' in solution_attrib:
+        print(body + question)
+        print(formula)
         return None
 
     equation = formula.split('=')[0]
@@ -47,9 +56,15 @@ def MWP_from_asdiv(xml_problem):
 
     return MWP(question, equation, answer)
 
-# def MWP_from_mawps(mawps):
-    
+def MWP_from_mawps(mawps):
+    question = mawps["original_text"]
+    answer = float(mawps["ans"])
+    equation = mawps["equation"].split('=')[1]
 
+    # print(question, equation, answer)
+
+    return MWP(question, equation, answer)
+    
 if config["dataset"] == "asdiv":
     with open('data/asdiv_a.txt') as file:
         asdiv_a_ids = [line.rstrip() for line in file]
@@ -60,14 +75,14 @@ if config["dataset"] == "asdiv":
     for child in root:
         if child.attrib['ID'] in asdiv_a_ids:
             mwp = MWP_from_asdiv(child)
-            if mwp is not None:
+            if mwp is not None and mwp.valid:
                 mwps.append(mwp)
 elif config["dataset"] == "mawps":
     with open('data/mawps.json') as file:
-        mawps = json.loads(file)
+        mawps = json.loads(file.read())
         for mawps_q in mawps:
             mwp = MWP_from_mawps(mawps_q)
-            if mwp is not None:
+            if mwp is not None and mwp.valid:
                 mwps.append(mwp)
 
 SOS_token = 0
@@ -97,10 +112,10 @@ q_lang = Lang()
 a_lang = Lang()
 
 for mwp in mwps:
-    q_tokens, a_tokens, _ = tokensFromMWP(mwp.question, mwp.equation)
+    # q_tokens, a_tokens, _ = tokensFromMWP(mwp.question, mwp.equation)
 
-    q_lang.addTokens(q_tokens)
-    a_lang.addTokens(a_tokens)
+    q_lang.addTokens(mwp.question.split(" "))
+    a_lang.addTokens(mwp.equation.split(" "))
 
 valid_mwps = mwps
 

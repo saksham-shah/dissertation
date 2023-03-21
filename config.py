@@ -10,5 +10,5 @@ config = {
     "rpn": True,
     "num_emb": False,
     "embedding_size": 300,
-    "dataset": "asdiv"
+    "dataset": "mawps"
 }
