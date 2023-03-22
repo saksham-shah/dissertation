@@ -62,7 +62,7 @@ def timeSince(since, percent):
 
 # def validate
 
-def trainIters(config, embedding, encoder, decoder, n_iters, print_every=1000):
+def trainIters(config, mwps, embedding, encoder, decoder, q_lang, a_lang, n_iters, print_every=1000):
     start = time.time()
     print_loss_total = 0
 
@@ -76,13 +76,15 @@ def trainIters(config, embedding, encoder, decoder, n_iters, print_every=1000):
     count = 0
 
     max_acc = 0
+    acc = 0
+    iter = 0
     epoch_since_improvement = 0
 
-    train_loader, test_loader = train_test(config, valid_mwps)
+    train_loader, test_loader = train_test(config, mwps)
 
     for iter in range(1, n_iters + 1):
         for mwp in train_loader:
-            input_tensor, target_tensor, input_lengths, target_lengths, numbers = indexesFromPairs(mwp['question'], mwp['formula'], config["rpn"])
+            input_tensor, target_tensor, input_lengths, target_lengths, numbers = indexesFromPairs(mwp['question'], mwp['formula'], q_lang, a_lang, config["rpn"])
             count += 1
 
             numbers = [list(map(float, nums.split(","))) for nums in mwp['numbers']]
@@ -97,9 +99,9 @@ def trainIters(config, embedding, encoder, decoder, n_iters, print_every=1000):
         
         correct = 0
         for mwp in test_loader:
-            q_tokens, a_tokens, numbers = tokensFromMWP(mwp["question"][0], mwp["formula"][0])
+            # q_tokens, a_tokens, numbers = tokensFromMWP(mwp["question"][0], mwp["formula"][0])
             numbers = [list(map(float, nums.split(","))) for nums in mwp['numbers']]
-            output_words, attentions = evaluate(embedding, encoder, decoder, mwp["question"][0].split(" "), numbers)
+            output_words, attentions = evaluate(embedding, encoder, decoder, mwp["question"][0].split(" "), numbers, q_lang, a_lang)
             if check(config, output_words, mwp["formula"][0].split(" ")):
                 correct += 1
             

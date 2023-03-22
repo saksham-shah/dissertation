@@ -5,15 +5,15 @@ import torch.nn.functional as F
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Embedding(nn.Module):
-    def __init__(self, config, input_size, lang=None, weights_matrix=None):
+    def __init__(self, config, input_size, lang=None):
         super(Embedding, self).__init__()
 
         self.num_emb = config["num_emb"]
         self.lang = lang
 
         self.embedding = nn.Embedding(input_size, config["embedding_size"])
-        if weights_matrix is not None:
-            self.embedding.weight.data.copy_(torch.from_numpy(weights_matrix))
+        if lang is not None:
+            self.embedding.weight.data.copy_(torch.from_numpy(lang.weights))
 
     def forward(self, inputs, numbers=None, restore_indexes=None):
         emb = self.embedding(inputs)

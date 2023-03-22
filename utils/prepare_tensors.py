@@ -23,7 +23,7 @@ def pad_indexes(indexes, max_length):
     indexes += [EOS_token for i in range(max_length - len(indexes))]
     return indexes
 
-def indexesFromPairs(questions, formulas, rpn=False):
+def indexesFromPairs(questions, formulas, q_lang, a_lang, rpn=False):
     # all_tokens = [tokensFromMWP(question, formula, rpn=rpn) for question, formula in zip(questions, formulas)]
     # q_indexes = [indexesFromTokens(q_lang, q) for q,_,_ in all_tokens]
     # a_indexes = [indexesFromTokens(a_lang, a) for _,a,_ in all_tokens]

@@ -19,7 +19,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #     tensor = torch.tensor(indexes, dtype=torch.long, device=device)
 #     return tensor
 
-def evaluate(embedding, encoder, decoder, tokens, numbers=None, max_length = 120):
+def evaluate(embedding, encoder, decoder, tokens, numbers, q_lang, a_lang, max_length = 120):
     with torch.no_grad():
         input_tensor = tensorFromTokens(q_lang, tokens).view(-1, 1)
         input_length = input_tensor.size()[0]
@@ -49,15 +49,15 @@ def evaluate(embedding, encoder, decoder, tokens, numbers=None, max_length = 120
 
         return decoded_words, decoder_attentions[:di + 1]
 
-def evaluateRandomly(embedding, encoder, decoder, n=10):
-    for i in range(n):
-        mwp = random.choice(valid_mwps)
-        print('>', ' '.join(mwp.q_tokens))
-        print('=', ' '.join(mwp.a_tokens))
-        output_words, attentions = evaluate(embedding, encoder, decoder, mwp.q_tokens)
-        output_sentence = ' '.join(output_words)
-        print('<', output_sentence)
-        print('')
+# def evaluateRandomly(embedding, mwps, encoder, decoder, q_lang, a_lang, n=10):
+#     for i in range(n):
+#         mwp = random.choice(mwps)
+#         print('>', ' '.join(mwp.q_tokens))
+#         print('=', ' '.join(mwp.a_tokens))
+#         output_words, attentions = evaluate(embedding, encoder, decoder, mwp.q_tokens, q_lang, a_lang)
+#         output_sentence = ' '.join(output_words)
+#         print('<', output_sentence)
+#         print('')
 
 def check(config, output_tokens, target_tokens):
     if config["rpn"]:
@@ -66,13 +66,13 @@ def check(config, output_tokens, target_tokens):
     target_sentence = ' '.join(target_tokens) + ' <EOS>'
     return output_sentence == target_sentence
 
-def accuracy(config, embedding, encoder, decoder):
+def accuracy(config, mwps, embedding, encoder, decoder, q_lang, a_lang):
     correct = 0
-    for mwp in valid_mwps:
+    for mwp in mwps:
         q_tokens, a_tokens, numbers = tokensFromMWP(mwp.question, mwp.equation)
         q_tokens, a_tokens = mwp.question.split(" "), mwp.equation.split(" ")
         numbers = list(map(float, mwp.numbers.split(",")))
-        output_words, attentions = evaluate(embedding, encoder, decoder, q_tokens, [numbers])
+        output_words, attentions = evaluate(embedding, encoder, decoder, q_tokens, [numbers], q_lang, a_lang)
 
         if check(config, output_words, a_tokens):
             correct += 1
@@ -83,5 +83,5 @@ def accuracy(config, embedding, encoder, decoder):
         output_sentence = ' '.join(output_words)
         target_sentence = ' '.join(a_tokens) + ' <EOS>'
         print(target_sentence, output_sentence)
-    print("Accuracy:", correct / len(valid_mwps))
-    return correct / len(valid_mwps)
+    print("Accuracy:", correct / len(mwps))
+    return correct / len(mwps)

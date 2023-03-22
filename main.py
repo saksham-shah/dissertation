@@ -14,13 +14,15 @@ for dataset in ["mawps", "asdiv"]:
             config["rpn"] = rpn
             config["num_emb"] = num_emb
 
-            embedding = Embedding(config, q_lang.n_tokens, q_lang, q_weights_matrix).to(device)
+            mwps, q_lang, a_lang = load_data(config)
+
+            embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
             encoder = Encoder(config).to(device)
             attn_decoder = Decoder(config, a_lang.n_tokens).to(device)
 
-            max_acc, acc, iters = trainIters(config, embedding, encoder, attn_decoder, 50, print_every=100)
+            max_acc, acc, iters = trainIters(config, mwps, embedding, encoder, attn_decoder, q_lang, a_lang, 50, print_every=100)
 
-            overall_acc = accuracy(config, embedding, encoder, attn_decoder)
+            overall_acc = accuracy(config, mwps, embedding, encoder, attn_decoder, q_lang, a_lang)
 
             output += "Dataset: " + dataset + "\n"
             output += "RPN: " + ("True\n" if rpn else "False\n")
