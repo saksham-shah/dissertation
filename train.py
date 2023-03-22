@@ -62,7 +62,7 @@ def timeSince(since, percent):
 
 # def validate
 
-def trainIters(config, mwps, embedding, encoder, decoder, q_lang, a_lang, n_iters, print_every=1000):
+def trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q_lang, a_lang, n_iters, print_every=1000):
     start = time.time()
     print_loss_total = 0
 
@@ -80,7 +80,7 @@ def trainIters(config, mwps, embedding, encoder, decoder, q_lang, a_lang, n_iter
     iter = 0
     epoch_since_improvement = 0
 
-    train_loader, test_loader = train_test(config, mwps)
+    # train_loader, test_loader = train_test(config, mwps)
 
     for iter in range(1, n_iters + 1):
         for mwp in train_loader:

@@ -1,6 +1,7 @@
 from models.embedding import Embedding
 from models.encoder import Encoder
 from models.decoder import Decoder
+from data import *
 from train import *
 from config import *
 from evaluate import *
@@ -20,7 +21,9 @@ for dataset in ["mawps", "asdiv"]:
             encoder = Encoder(config).to(device)
             attn_decoder = Decoder(config, a_lang.n_tokens).to(device)
 
-            max_acc, acc, iters = trainIters(config, mwps, embedding, encoder, attn_decoder, q_lang, a_lang, 50, print_every=100)
+            train_loader, test_loader = train_test(config, mwps)
+
+            max_acc, acc, iters = trainIters(config, train_loader, test_loader, embedding, encoder, attn_decoder, q_lang, a_lang, 50, print_every=100)
 
             overall_acc = accuracy(config, mwps, embedding, encoder, attn_decoder, q_lang, a_lang)
 

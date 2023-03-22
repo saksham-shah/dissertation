@@ -45,8 +45,8 @@ class MWPDataset(torch.utils.data.Dataset):
     self.targets = targets
 
   def __getitem__(self, idx):
-    item = {key: torch.tensor(val[idx]) for key, val in self.inputs.items()}
-    item['labels'] = torch.tensor(self.targets['input_ids'][idx])
+    item = {key: torch.tensor(val[idx], device=device) for key, val in self.inputs.items()}
+    item['labels'] = torch.tensor(self.targets['input_ids'][idx], device=device)
     return item
   
   def __len__(self):
@@ -118,7 +118,7 @@ def evaluate_accuracy(model, tokeniser, inputs, targets):
         input_tokens = tokeniser([input], max_length=1024, return_tensors='pt')
         input_tokens['input_ids'].to(device)
 
-        pred_tokens = model.generate(input['input_ids'], num_beams=4, max_length=32, early_stopping=True)
+        pred_tokens = model.generate(input_tokens['input_ids'], num_beams=4, max_length=32, early_stopping=True)
         pred = [tokeniser.decode(token, skip_special_tokens=True, clean_up_tokenization_spaces=False) for token in pred_tokens]
 
         if pred == target:
@@ -127,7 +127,7 @@ def evaluate_accuracy(model, tokeniser, inputs, targets):
 
     return correct / len(inputs)
 
-tokeniser = AutoTokenizer.from_pretrained(model_checkpoint).to(device)
+tokeniser = AutoTokenizer.from_pretrained(model_checkpoint)
 model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint).to(device)
 
 inputs, targets = get_data(config)

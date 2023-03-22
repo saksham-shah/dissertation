@@ -15,7 +15,7 @@ class Build_Data(Dataset):
     def __len__(self):
         return self.len
 
-def batch_data(config, mwps, batch_size=1):
+def batch_data(mwps, batch_size=1):
     dataset = Build_Data(mwps)
     dataloader = DataLoader(dataset, batch_size=batch_size)
     return dataloader
@@ -27,7 +27,7 @@ def train_test(config, mwps):
     boundary = math.floor(len(mwps) * 0.9)
     print(len(mwps), boundary)
 
-    train = batch_data(config, mwps[:boundary], batch_size=config["batch_size"])
-    test = batch_data(config, mwps[boundary:], batch_size=1)
+    train = batch_data(mwps[:boundary], batch_size=config["batch_size"])
+    test = batch_data(mwps[boundary:], batch_size=1)
     
     return train, test
