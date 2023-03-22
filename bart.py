@@ -1,14 +1,26 @@
 import math
 import random
 
+import torch
 import transformers
 print(transformers.__version__)
 
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, Seq2SeqTrainer
-
 from data import *
 
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, Seq2SeqTrainer
+
 model_checkpoint = "facebook/bart-base"
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+config = {
+    "batch_size": 16,
+    "learning_rate": 2e-5,
+    "rpn": True,
+    "dataset": "mawps",
+    "epochs": 5,
+    "weight_decay": 0.01,
+}
 
 def mwp_to_dict(mwp):
     return {
@@ -27,90 +39,98 @@ def train_test_split(data, test_size=0.1):
     test = data[boundary:]
     return { "train": train, "test": test }
 
-data = train_test_split(list(map(mwp_to_dict, mwps)))
+class MWPDataset(torch.utils.data.Dataset):
+  def __init__(self, inputs, targets):
+    self.inputs = inputs
+    self.targets = targets
 
-print(data["train"][0])
+  def __getitem__(self, idx):
+    item = {key: torch.tensor(val[idx]) for key, val in self.inputs.items()}
+    item['labels'] = torch.tensor(self.targets['input_ids'][idx])
+    return item
+  
+  def __len__(self):
+    return len(self.inputs['input_ids'])
+  
+def get_data(config):
+    mwps, _, _ = load_data(config)
+    data = list(map(mwp_to_dict, mwps))
 
+    inputs = train_test_split([mwp["question"] for mwp in data])
+    targets = train_test_split([mwp["equation"] for mwp in data])
 
-tokeniser = AutoTokenizer.from_pretrained(model_checkpoint)
+    return inputs, targets
 
-print(tokeniser("Hello, this one sentence!"))
+def tokenise_data(tokeniser, inputs, targets):
+    max_input_length = 1024
+    max_target_length = 64
 
-print(Q_MAX_LENGTH, A_MAX_LENGTH)
+    tokenised_inputs = {
+        "train": tokeniser(inputs["train"], max_length=max_input_length, truncation=True),
+        "test": tokeniser(inputs["test"], max_length=max_input_length, truncation=True),
+    }
 
-max_input_length = 1024
-max_target_length = 64
+    tokenised_targets = {
+        "train": tokeniser(targets["train"], max_length=max_target_length, truncation=True),
+        "test": tokeniser(targets["test"], max_length=max_target_length, truncation=True),
+    }
 
-# def preprocess_function(data):
-#     # print("preprocess: ")
-#     # for mwp in data:
-#     #     print(data)
-#     #     print(mwp)
-#     inputs = [mwp["question"] for mwp in data]
-#     targets = [mwp["equation"] for mwp in data]
-#     model_inputs = tokeniser(inputs, max_length=max_input_length, truncation=True)
+    train_dataset = MWPDataset(tokenised_inputs["train"], tokenised_targets["train"])
+    test_dataset = MWPDataset(tokenised_inputs["test"], tokenised_targets["test"])
 
-#     # Setup the tokenizer for targets
-#     with tokeniser.as_target_tokenizer():
-#         labels = tokeniser(targets, max_length=max_target_length, truncation=True)
+    return train_dataset, test_dataset
 
-#     model_inputs["labels"] = labels["input_ids"]
-#     return model_inputs
+def train_model(config, model, tokeniser, train_dataset, test_dataset):
+    batch_size = config["batch_size"]
+    args = Seq2SeqTrainingArguments(
+        f"{model_checkpoint}-finetunes-mawps",
+        evaluation_strategy = "epoch",
+        learning_rate=config["learning_rate"],
+        per_device_train_batch_size=batch_size,
+        per_device_eval_batch_size=batch_size,
+        weight_decay=config["weight_decay"],
+        save_total_limit=3,
+        num_train_epochs=config["epochs"],
+        predict_with_generate=True,
+    )
 
-def preprocess_function(data):
-    # print("preprocess: ")
-    # for mwp in data:
-    #     print(data)
-    #     print(mwp)
-    inputs = [data["question"]]
-    targets = [data["equation"]]
-    model_inputs = tokeniser(inputs, max_length=max_input_length, truncation=True)
+    data_collator = DataCollatorForSeq2Seq(tokeniser, model=model)
 
-    # Setup the tokenizer for targets
-    with tokeniser.as_target_tokenizer():
-        labels = tokeniser(targets, max_length=max_target_length, truncation=True)
+    trainer = Seq2SeqTrainer(
+        model,
+        args,
+        train_dataset=train_dataset,
+        eval_dataset=test_dataset,
+        data_collator=data_collator,
+        tokenizer=tokeniser,
+    )
 
-    model_inputs["labels"] = labels["input_ids"]
-    return model_inputs
+    print("Training now...")
 
-# print(preprocess_function(data["train"][:2]))
+    trainer.train()
 
-# print("Data:")
-# print(data["train"])
+def evaluate_accuracy(model, tokeniser, inputs, targets):
+    correct = 0
+    for i in range(len(inputs)):
+        input = inputs[i]
+        target = targets[i]
 
-tokenised_data = {
-    "train": list(map(preprocess_function, data["train"])),
-    "test": list(map(preprocess_function, data["test"])),
-}
+        input_tokens = tokeniser([input], max_length=1024, return_tensors='pt')
+        input_tokens['input_ids'].to(device)
 
-model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)
+        pred_tokens = model.generate(input['input_ids'], num_beams=4, max_length=32, early_stopping=True)
+        pred = [tokeniser.decode(token, skip_special_tokens=True, clean_up_tokenization_spaces=False) for token in pred_tokens]
 
-batch_size = 16
-args = Seq2SeqTrainingArguments(
-    f"{model_checkpoint}-finetunes-mawps",
-    evaluation_strategy = "epoch",
-    learning_rate=2e-5,
-    per_device_train_batch_size=batch_size,
-    per_device_eval_batch_size=batch_size,
-    weight_decay=0.01,
-    save_total_limit=3,
-    num_train_epochs=1,
-    predict_with_generate=True,
-)
+        if pred == target:
+            print(pred)
+            correct += 1
 
-data_collator = DataCollatorForSeq2Seq(tokeniser, model=model)
+    return correct / len(inputs)
 
-trainer = Seq2SeqTrainer(
-    model,
-    args,
-    train_dataset=tokenised_data["train"],
-    eval_dataset=tokenised_data["test"],
-    data_collator=data_collator,
-    tokenizer=tokeniser,
-)
+tokeniser = AutoTokenizer.from_pretrained(model_checkpoint).to(device)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint).to(device)
 
-print("Training now...")
+inputs, targets = get_data(config)
+train_dataset, test_dataset = tokenise_data(tokeniser, inputs, targets)
 
-
-
-trainer.train()
+train_model(config, model, tokeniser, train_dataset, test_dataset)

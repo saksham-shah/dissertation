@@ -1,8 +1,5 @@
 import torch
-import math
-import random
-import time
-from utils.prepare_tensors import *
+from data import *
 from utils.load_batches import *
 from evaluate import *
 from config import *
@@ -28,6 +25,7 @@ def create_mask(src, tgt):
     tgt_padding_mask = (tgt == EOS_token).transpose(0, 1)
     return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
 
+mwps, q_lang, a_lang = load_data(config)
 
 transformer = Transformer(config, 5, 5, 512, 8, q_lang.n_tokens, a_lang.n_tokens)
 
@@ -81,7 +79,7 @@ def evaluate(config, model, val_loader, criterion):
 
 NUM_EPOCHS = 18
 
-train_loader, val_loader = train_test(config, valid_mwps, batch_test=True)
+train_loader, val_loader = train_test(config, mwps, batch_test=True)
 
 for epoch in range(1, NUM_EPOCHS+1):
     start_time = timer()

@@ -4,7 +4,7 @@ import re
 from torchtext.vocab import GloVe
 import numpy as np
 from utils.process_input import *
-from config import *
+# from config import *
 
 global_vectors = GloVe(name='6B', dim=300)
 
@@ -19,7 +19,7 @@ global_vectors = GloVe(name='6B', dim=300)
 # A_MAX_LENGTH = 0
 
 class MWP:
-    def __init__(self, id, question, equation, answer):
+    def __init__(self, config, id, question, equation, answer):
         self.id = id
 
         q_tokens, a_tokens, numbers = tokensFromMWP(question, equation, rpn=config["rpn"])
@@ -35,7 +35,7 @@ class MWP:
         self.answer = answer
         self.numbers = ",".join(map(str, numbers))
 
-def MWP_from_asdiv(xml_problem):
+def MWP_from_asdiv(config, xml_problem):
     id = xml_problem.attrib['ID']
     body = xml_problem.find('Body').text
     question = xml_problem.find('Question').text
@@ -59,9 +59,9 @@ def MWP_from_asdiv(xml_problem):
     question = re.sub(r"([?$])", r" \1 ", question)
     question = re.sub(r"([.,])([^0-9])", r" \1 \2", question)
 
-    return MWP(id, question, equation, answer)
+    return MWP(config, id, question, equation, answer)
 
-def MWP_from_mawps(mawps):
+def MWP_from_mawps(config, mawps):
     id = mawps["id"]
     question = mawps["original_text"]
     answer = float(mawps["ans"])
@@ -69,7 +69,7 @@ def MWP_from_mawps(mawps):
 
     # print(question, equation, answer)
 
-    return MWP(id, question, equation, answer)
+    return MWP(config, id, question, equation, answer)
 
 SOS_token = 0
 EOS_token = 1
@@ -100,7 +100,7 @@ class Lang:
 
 def load_data(config):
     mwps = []
-    
+
     if config["dataset"] == "asdiv":
         with open('data/asdiv_a.txt') as file:
             asdiv_a_ids = [line.rstrip() for line in file]
@@ -110,14 +110,14 @@ def load_data(config):
 
         for child in root:
             if child.attrib['ID'] in asdiv_a_ids:
-                mwp = MWP_from_asdiv(child)
+                mwp = MWP_from_asdiv(config, child)
                 if mwp is not None and mwp.valid:
                     mwps.append(mwp)
     elif config["dataset"] == "mawps":
         with open('data/mawps.json') as file:
             mawps = json.loads(file.read())
             for mawps_q in mawps:
-                mwp = MWP_from_mawps(mawps_q)
+                mwp = MWP_from_mawps(config, mawps_q)
                 if mwp is not None and mwp.valid:
                     mwps.append(mwp)
 
