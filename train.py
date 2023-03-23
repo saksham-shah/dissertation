@@ -103,16 +103,19 @@ def trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q
                 print_loss_total = 0
                 print('%s (%d %d%%) %.4f' % (timeSince(start, count / n_iters / len(train_loader)), count, count / n_iters / len(train_loader) * 100, print_loss_avg))
         
-        correct = 0
-        for mwp in test_loader:
-            # q_tokens, a_tokens, numbers = tokensFromMWP(mwp["question"][0], mwp["formula"][0])
-            numbers = [list(map(float, nums.split(","))) for nums in mwp['numbers']]
-            output_words, attentions = evaluate(config, embedding, encoder, decoder, mwp["question"][0].split(" "), numbers, q_lang, a_lang)
-            if check(config, output_words, mwp["formula"][0].split(" ")):
-                correct += 1
-            
-        acc = correct / len(test_loader)
+        acc = accuracy(config, test_loader, embedding, encoder, decoder, q_lang, a_lang)
         print ("%s epoch: %d, accurary: %.4f" % (timeSince(start, count / n_iters / len(train_loader)), iter, acc))
+
+        # correct = 0
+        # for mwp in test_loader:
+        #     # q_tokens, a_tokens, numbers = tokensFromMWP(mwp["question"][0], mwp["formula"][0])
+        #     numbers = [list(map(float, nums.split(","))) for nums in mwp['numbers']]
+        #     output_words, attentions = evaluate(config, embedding, encoder, decoder, mwp["question"][0].split(" "), numbers, q_lang, a_lang)
+        #     if check(config, output_words, mwp["formula"][0].split(" ")):
+        #         correct += 1
+            
+        # acc = correct / len(test_loader)
+        # print ("%s epoch: %d, accurary: %.4f" % (timeSince(start, count / n_iters / len(train_loader)), iter, acc))
 
         if acc > max_acc:
             max_acc = acc

@@ -1,6 +1,6 @@
 import torch
 from data import *
-import random
+import math
 from utils.prepare_tensors import *
 from utils.rpn import *
 
@@ -62,29 +62,68 @@ def evaluate(config, embedding, encoder, decoder, tokens, numbers, q_lang, a_lan
 #         print('<', output_sentence)
 #         print('')
 
-def check(config, output_tokens, target_tokens):
-    if config["rpn"]:
+def check(config, output_tokens, target_tokens, answer=None, numbers=None):
+    if answer is not None and numbers is not None:
+        if output_tokens[-1] == '<EOS>':
+            output_tokens.pop()    
+        if not config['rpn']:
+            output_tokens = infix_to_rpn(output_tokens)
+        output_ans = eval_rpn(output_tokens, numbers)
+        print(" ".join(output_tokens), numbers, output_ans)
+        return output_ans is not None and math.isclose(output_ans, answer, rel_tol=1e-5)
+
+    if config['rpn']:
         target_tokens = infix_to_rpn(target_tokens)
+
     output_sentence = ' '.join(output_tokens)
     target_sentence = ' '.join(target_tokens) + ' <EOS>'
     return output_sentence == target_sentence
 
-def accuracy(config, mwps, embedding, encoder, decoder, q_lang, a_lang):
+def accuracy(config, test_set, embedding, encoder, decoder, q_lang, a_lang, print_output=False):
     correct = 0
-    for mwp in mwps:
-        q_tokens, a_tokens, numbers = tokensFromMWP(mwp.question, mwp.equation)
-        q_tokens, a_tokens = mwp.question.split(" "), mwp.equation.split(" ")
-        numbers = list(map(float, mwp.numbers.split(",")))
+    for mwp in test_set:
+        # q_tokens, a_tokens, numbers = tokensFromMWP(mwp.question, mwp.equation)
+        q_tokens, a_tokens = mwp['question'][0].split(" "), mwp['formula'][0].split(" ")
+        numbers = list(map(float, mwp['numbers'][0].split(",")))
         output_words, attentions = evaluate(config, embedding, encoder, decoder, q_tokens, [numbers], q_lang, a_lang)
 
-        if check(config, output_words, a_tokens):
+        if check(config, output_words, a_tokens, mwp['answer'][0], numbers):
             correct += 1
 
-        if config["rpn"]:
-            a_tokens = infix_to_rpn(a_tokens)
+        if print_output:
+            if config["rpn"]:
+                a_tokens = infix_to_rpn(a_tokens)
 
-        output_sentence = ' '.join(output_words)
-        target_sentence = ' '.join(a_tokens) + ' <EOS>'
-        print(target_sentence, output_sentence)
-    print("Accuracy:", correct / len(mwps))
-    return correct / len(mwps)
+            output_sentence = ' '.join(output_words)
+            target_sentence = ' '.join(a_tokens) + ' <EOS>'
+            print(target_sentence, output_sentence)
+    if print_output:
+        print("Accuracy:", correct / len(test_set))
+    return correct / len(test_set)
+
+# def check(config, output_tokens, target_tokens, numbers=None):
+#     if config["rpn"]:
+#         target_tokens = infix_to_rpn(target_tokens)
+#     output_sentence = ' '.join(output_tokens)
+#     target_sentence = ' '.join(target_tokens) + ' <EOS>'
+#     return output_sentence == target_sentence
+
+# def accuracy(config, mwps, embedding, encoder, decoder, q_lang, a_lang):
+#     correct = 0
+#     for mwp in mwps:
+#         q_tokens, a_tokens, numbers = tokensFromMWP(mwp.question, mwp.equation)
+#         q_tokens, a_tokens = mwp.question.split(" "), mwp.equation.split(" ")
+#         numbers = list(map(float, mwp.numbers.split(",")))
+#         output_words, attentions = evaluate(config, embedding, encoder, decoder, q_tokens, [numbers], q_lang, a_lang)
+
+#         if check(config, output_words, a_tokens, numbers):
+#             correct += 1
+
+#         if config["rpn"]:
+#             a_tokens = infix_to_rpn(a_tokens)
+
+#         output_sentence = ' '.join(output_words)
+#         target_sentence = ' '.join(a_tokens) + ' <EOS>'
+#         print(target_sentence, output_sentence)
+#     print("Accuracy:", correct / len(mwps))
+#     return correct / len(mwps)
