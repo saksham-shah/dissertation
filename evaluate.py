@@ -19,7 +19,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #     tensor = torch.tensor(indexes, dtype=torch.long, device=device)
 #     return tensor
 
-def evaluate(embedding, encoder, decoder, tokens, numbers, q_lang, a_lang, max_length = 120):
+def evaluate(config, embedding, encoder, decoder, tokens, numbers, q_lang, a_lang, max_length = 120):
     with torch.no_grad():
         input_tensor = tensorFromTokens(q_lang, tokens).view(-1, 1)
         input_length = input_tensor.size()[0]
@@ -35,9 +35,12 @@ def evaluate(embedding, encoder, decoder, tokens, numbers, q_lang, a_lang, max_l
         decoder_attentions = torch.zeros(max_length, max_length)
 
         for di in range(max_length):
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_outputs)
-            decoder_attentions[di, :decoder_attention.shape[1]] = decoder_attention.data
+            if config["attention"]:
+                decoder_output, decoder_hidden, decoder_attention = decoder(
+                    decoder_input, decoder_hidden, encoder_outputs)
+                decoder_attentions[di, :decoder_attention.shape[1]] = decoder_attention.data
+            else:
+                decoder_output, decoder_hidden = decoder(decoder_input, decoder_hidden)
             topv, topi = decoder_output.data.topk(1)
             if topi.item() == EOS_token:
                 decoded_words.append('<EOS>')
@@ -72,7 +75,7 @@ def accuracy(config, mwps, embedding, encoder, decoder, q_lang, a_lang):
         q_tokens, a_tokens, numbers = tokensFromMWP(mwp.question, mwp.equation)
         q_tokens, a_tokens = mwp.question.split(" "), mwp.equation.split(" ")
         numbers = list(map(float, mwp.numbers.split(",")))
-        output_words, attentions = evaluate(embedding, encoder, decoder, q_tokens, [numbers], q_lang, a_lang)
+        output_words, attentions = evaluate(config, embedding, encoder, decoder, q_tokens, [numbers], q_lang, a_lang)
 
         if check(config, output_words, a_tokens):
             correct += 1

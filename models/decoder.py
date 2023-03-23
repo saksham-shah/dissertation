@@ -25,7 +25,7 @@ class Decoder(nn.Module):
         self.concat = nn.Linear(self.hidden_size * 2, self.hidden_size)
 
 
-    def forward(self, inputs, hidden, encoder_outputs):
+    def forward(self, inputs, hidden):
         embedded = self.embedding(inputs.unsqueeze(0))
         embedded = self.embedding_dropout(embedded) # 1, 1, emb
 
@@ -34,16 +34,11 @@ class Decoder(nn.Module):
         except:
             embedded = embedded.view(1, 1, self.embedding_size)
 
-        embedded, hidden = self.lstm(embedded, hidden) # 1, 1, hidden
+        output = F.relu(embedded)
+        output, hidden = self.lstm(output, hidden) # 1, 1, hidden
 
-        # Calculate the context vector and attention weights
-        context, attention_weights = self.attention(embedded, encoder_outputs) # 1, emb
-
-        # Concatenate the context vector and the embedded input
-        combined = torch.cat((embedded[0], context), dim=1) # 1, emb+hid
-        concat = F.relu(self.concat(combined)) # 1, hidden
-
-        output = self.out(concat)
+        output = output.squeeze(0)
+        output = self.out(output)
         output = F.log_softmax(output, dim=1)
 
-        return output, hidden, attention_weights
+        return output, hidden

@@ -1,6 +1,7 @@
 from models.embedding import Embedding
 from models.encoder import Encoder
 from models.decoder import Decoder
+from models.attention import AttnDecoder
 from data import *
 from train import *
 from config import *
@@ -19,13 +20,16 @@ for dataset in ["mawps", "asdiv"]:
 
             embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
             encoder = Encoder(config).to(device)
-            attn_decoder = Decoder(config, a_lang.n_tokens).to(device)
+            if config["attention"]:
+                decoder = AttnDecoder(config, a_lang.n_tokens).to(device)
+            else:
+                decoder = Decoder(config, a_lang.n_tokens).to(device)
 
             train_loader, test_loader = train_test(config, mwps)
 
-            max_acc, acc, iters = trainIters(config, train_loader, test_loader, embedding, encoder, attn_decoder, q_lang, a_lang, 50, print_every=100)
+            max_acc, acc, iters = trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q_lang, a_lang, 1, print_every=100)
 
-            overall_acc = accuracy(config, mwps, embedding, encoder, attn_decoder, q_lang, a_lang)
+            overall_acc = accuracy(config, mwps, embedding, encoder, decoder, q_lang, a_lang)
 
             output += "Dataset: " + dataset + "\n"
             output += "RPN: " + ("True\n" if rpn else "False\n")
@@ -36,4 +40,4 @@ print(output)
 
 # torch.save(embedding, 'asdiv-baseline-embedding.pt')
 # torch.save(encoder, 'asdiv-baseline-encoder.pt')
-# torch.save(attn_decoder, 'asdiv-baseline-attndecoder.pt')
+# torch.save(decoder, 'asdiv-baseline-decoder.pt')

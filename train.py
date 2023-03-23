@@ -27,12 +27,18 @@ def train(config, input_tensor, target_tensor, input_lengths, target_lengths, nu
 
     if use_teacher_forcing:
         for di in range(target_length):
-            decoder_output, decoder_hidden, decoder_attention = decoder(decoder_input, decoder_hidden, encoder_outputs)
+            if config["attention"]:
+                decoder_output, decoder_hidden, decoder_attention = decoder(decoder_input, decoder_hidden, encoder_outputs)
+            else:
+                decoder_output, decoder_hidden = decoder(decoder_input, decoder_hidden)
             loss += criterion(decoder_output, target_tensor[di])
             decoder_input = target_tensor[di]
     else:
         for di in range(target_length):
-            decoder_output, decoder_hidden, decoder_attention = decoder(decoder_input, decoder_hidden, encoder_outputs)
+            if config["attention"]:
+                decoder_output, decoder_hidden, decoder_attention = decoder(decoder_input, decoder_hidden, encoder_outputs)
+            else:
+                decoder_output, decoder_hidden = decoder(decoder_input, decoder_hidden)
             topv, topi = decoder_output.topk(1)
             decoder_input = topi.squeeze().detach()
             loss += criterion(decoder_output, target_tensor[di])
@@ -101,7 +107,7 @@ def trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q
         for mwp in test_loader:
             # q_tokens, a_tokens, numbers = tokensFromMWP(mwp["question"][0], mwp["formula"][0])
             numbers = [list(map(float, nums.split(","))) for nums in mwp['numbers']]
-            output_words, attentions = evaluate(embedding, encoder, decoder, mwp["question"][0].split(" "), numbers, q_lang, a_lang)
+            output_words, attentions = evaluate(config, embedding, encoder, decoder, mwp["question"][0].split(" "), numbers, q_lang, a_lang)
             if check(config, output_words, mwp["formula"][0].split(" ")):
                 correct += 1
             
