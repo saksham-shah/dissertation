@@ -47,7 +47,7 @@ def infix_to_rpn(tokens):
     
     while len(operators) > 0:
         output.append(operators.pop())
-
+    # print(" ".join(tokens) + " ### " + " ".join(output))
     return output
 
 def eval_rpn(tokens, numbers):

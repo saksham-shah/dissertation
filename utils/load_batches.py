@@ -10,7 +10,12 @@ class Build_Data(Dataset):
         self.len = len(mwps)
 
     def __getitem__(self, index):
-        return {'question': self.mwps[index].question, 'formula': self.mwps[index].equation, 'answer': self.mwps[index].answer, 'numbers': self.mwps[index].numbers}
+        return {
+            'question': self.mwps[index].question,
+            'formula': self.mwps[index].equation,
+            'answer': self.mwps[index].answer,
+            'numbers': self.mwps[index].numbers
+        }
 
     def __len__(self):
         return self.len
@@ -27,7 +32,9 @@ def train_test(config, mwps):
     boundary = math.floor(len(mwps) * 0.9)
     print(len(mwps), boundary)
 
-    train = batch_data(mwps[:boundary], batch_size=config["batch_size"])
-    test = batch_data(mwps[boundary:], batch_size=1)
+    return mwps[:boundary], mwps[boundary:]
+
+    # train = batch_data(mwps[:boundary], batch_size=config["batch_size"])
+    # test = batch_data(mwps[boundary:], batch_size=1)
     
-    return train, test
+    # return train, test

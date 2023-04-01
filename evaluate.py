@@ -69,7 +69,7 @@ def check(config, output_tokens, target_tokens, answer=None, numbers=None):
         if not config['rpn']:
             output_tokens = infix_to_rpn(output_tokens)
         output_ans = eval_rpn(output_tokens, numbers)
-        print(" ".join(output_tokens), numbers, output_ans)
+        # print(" ".join(output_tokens), numbers, output_ans)
         return output_ans is not None and math.isclose(output_ans, answer, rel_tol=1e-5)
 
     if config['rpn']:

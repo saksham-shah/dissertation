@@ -5,7 +5,12 @@ from utils.process_input import *
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def indexesFromTokens(lang, tokens):
-    indexes = [lang.token2index[token] for token in tokens]
+    def index_from_token(lang, token):
+        if token in lang.token2index:
+            return lang.token2index[token]
+        return lang.token2index['UNK']
+    
+    indexes = [index_from_token(lang, token) for token in tokens]
     indexes.append(EOS_token)
     return indexes
 

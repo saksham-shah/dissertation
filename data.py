@@ -4,6 +4,7 @@ import re
 from torchtext.vocab import GloVe
 import numpy as np
 from utils.process_input import *
+from dataclasses import dataclass
 # from config import *
 
 global_vectors = GloVe(name='6B', dim=300)
@@ -18,22 +19,21 @@ global_vectors = GloVe(name='6B', dim=300)
 # Q_MAX_LENGTH = 0
 # A_MAX_LENGTH = 0
 
+@dataclass
 class MWP:
-    def __init__(self, config, id, question, equation, answer):
-        self.id = id
+    id: str
+    question: str
+    equation: str
+    answer: float
+    numbers: str
 
-        q_tokens, a_tokens, numbers = tokensFromMWP(question, equation, rpn=config["rpn"])
+def create_MWP(config, id, question, equation, answer):
+    q_tokens, a_tokens, numbers = tokensFromMWP(question, equation, rpn=config["rpn"])
 
-        if q_tokens is None:
-            # bad_mwps.append(question + " " + equation)
-            self.valid = False
-            return
-
-        self.valid = True
-        self.question = " ".join(q_tokens)
-        self.equation = " ".join(a_tokens)
-        self.answer = answer
-        self.numbers = ",".join(map(str, numbers))
+    if q_tokens is None:
+        return None
+    
+    return MWP(id, " ".join(q_tokens), " ".join(a_tokens), answer, ",".join(map(str, numbers)))
 
 def MWP_from_asdiv(config, xml_problem):
     id = xml_problem.attrib['ID']
@@ -43,13 +43,18 @@ def MWP_from_asdiv(config, xml_problem):
     answer = xml_problem.find('Answer').text
     formula = xml_problem.find('Formula').text
 
-    if solution_type  not in ['Addition', 'Subtraction', 'Multiplication', 'Common-Division', 'Sum', 'Difference', 'TVQ-Initial', 'TVQ-Change', 'TVQ-Final']:
+    if solution_type not in ['Addition', 'Subtraction', 'Multiplication', 'Common-Division', 'Sum', 'Difference', 'TVQ-Initial', 'TVQ-Change', 'TVQ-Final']:
+        # print(solution_type)
+        # print(body + question)
+        # print(formula + "<>" + answer)
         return None
+    
+    print(formula)
     
     solution_attrib = xml_problem.find('Solution-Type').attrib
     if 'UnitTrans' in solution_attrib:
-        print(body + question)
-        print(formula)
+        # print(body + question)
+        # print(formula)
         return None
 
     equation = formula.split('=')[0]
@@ -59,7 +64,7 @@ def MWP_from_asdiv(config, xml_problem):
     question = re.sub(r"([?$])", r" \1 ", question)
     question = re.sub(r"([.,])([^0-9])", r" \1 \2", question)
 
-    return MWP(config, id, question, equation, answer)
+    return create_MWP(config, id, question, equation, answer)
 
 def MWP_from_mawps(config, mawps):
     id = mawps["id"]
@@ -73,7 +78,7 @@ def MWP_from_mawps(config, mawps):
 
     # print(question, equation, answer)
 
-    return MWP(config, id, question, equation, answer)
+    return create_MWP(config, id, question, equation, answer)
 
 SOS_token = 0
 EOS_token = 1
@@ -115,19 +120,41 @@ def load_data(config):
         for child in root:
             if child.attrib['ID'] in asdiv_a_ids:
                 mwp = MWP_from_asdiv(config, child)
-                if mwp is not None and mwp.valid:
+                if mwp is not None:
                     mwps.append(mwp)
+            # else:
+            #     print(child.find('Body').text + child.find('Question').text)
+            #     print(child.find('Solution-Type').text)
+            #     print(child.find('Formula').text + child.find('Answer').text)
     elif config["dataset"] == "mawps":
         with open('data/mawps.json') as file:
             mawps = json.loads(file.read())
             for mawps_q in mawps:
                 mwp = MWP_from_mawps(config, mawps_q)
-                if mwp is not None and mwp.valid:
+                if mwp is not None:
                     mwps.append(mwp)
+    return mwps
 
-
+def generate_vocab(config, mwps):
     q_lang = Lang()
     a_lang = Lang()
+
+    tokens = {}
+    for mwp in mwps:
+        for token in mwp.question.split(" "):
+            if token in tokens:
+                tokens[token] += 1
+            else:
+                tokens[token] = 1
+    
+    for mwp in mwps:
+        unk_updated = []
+        for token in mwp.question.split(" "):
+            if tokens[token] > 1 or token[0] == '#':
+                unk_updated.append(token)
+            else:
+                unk_updated.append("UNK")
+        mwp.question = " ".join(unk_updated)
 
     for mwp in mwps:
         # q_tokens, a_tokens, _ = tokensFromMWP(mwp.question, mwp.equation)
@@ -163,4 +190,4 @@ def load_data(config):
         q_lang.set_weights(q_weights_matrix)
         a_lang.set_weights(a_weights_matrix)
     
-    return mwps, q_lang, a_lang
+    return q_lang, a_lang
