@@ -27,15 +27,15 @@ class MWP:
     answer: float
     numbers: str
 
-def create_MWP(config, id, question, equation, answer):
-    q_tokens, a_tokens, numbers = tokensFromMWP(question, equation, rpn=config["rpn"])
+def create_MWP(id, question, equation, answer):
+    q_tokens, a_tokens, numbers = tokensFromMWP(question, equation)
 
     if q_tokens is None:
         return None
     
     return MWP(id, " ".join(q_tokens), " ".join(a_tokens), answer, ",".join(map(str, numbers)))
 
-def MWP_from_asdiv(config, xml_problem):
+def MWP_from_asdiv(xml_problem):
     id = xml_problem.attrib['ID']
     body = xml_problem.find('Body').text
     question = xml_problem.find('Question').text
@@ -64,9 +64,9 @@ def MWP_from_asdiv(config, xml_problem):
     question = re.sub(r"([?$])", r" \1 ", question)
     question = re.sub(r"([.,])([^0-9])", r" \1 \2", question)
 
-    return create_MWP(config, id, question, equation, answer)
+    return create_MWP(id, question, equation, answer)
 
-def MWP_from_mawps(config, mawps):
+def MWP_from_mawps(mawps):
     id = "mawps" + str(mawps["id"])
     question = mawps["original_text"]
     answer = float(mawps["ans"])
@@ -78,7 +78,7 @@ def MWP_from_mawps(config, mawps):
 
     # print(question, equation, answer)
 
-    return create_MWP(config, id, question, equation, answer)
+    return create_MWP(id, question, equation, answer)
 
 SOS_token = 0
 EOS_token = 1
@@ -107,7 +107,7 @@ class Lang:
     def set_weights(self, weights):
         self.weights = weights
 
-def load_data(config):
+def load_data():
     mwps = {}
     ids = []
 
@@ -120,7 +120,7 @@ def load_data(config):
 
     for child in root:
         if child.attrib['ID'] in asdiv_a_ids:
-            mwp = MWP_from_asdiv(config, child)
+            mwp = MWP_from_asdiv(child)
             if mwp is not None:
                 mwps[mwp.id] = mwp
                 ids.append(mwp.id)
@@ -133,7 +133,7 @@ def load_data(config):
     with open('data/mawps.json') as file:
         mawps = json.loads(file.read())
         for mawps_q in mawps:
-            mwp = MWP_from_mawps(config, mawps_q)
+            mwp = MWP_from_mawps(mawps_q)
             if mwp is not None:
                 mwps[mwp.id] = mwp
                 ids.append(mwp.id)

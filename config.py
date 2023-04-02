@@ -7,9 +7,9 @@ config = {
     "bidirectional": True,
     "dropout": 0.1,
     "early_stopping": 5,
-    "rpn": True,
+    "rpn": False,
     "num_emb": False,
     "embedding_size": 300,
-    "dataset": "mawps",
+    "dataset": "asdiv",
     "attention": False,
 }

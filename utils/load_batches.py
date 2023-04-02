@@ -5,14 +5,18 @@ from torch.utils.data import DataLoader
 from data import *
 
 class Build_Data(Dataset):
-    def __init__(self, mwps):
+    def __init__(self, mwps, rpn=False):
         self.mwps = mwps
         self.len = len(mwps)
+        self.rpn = rpn
 
     def __getitem__(self, index):
+        equation = self.mwps[index].equation
+        if self.rpn:
+            equation = " ".join(infix_to_rpn(equation.split(" ")))
         return {
             'question': self.mwps[index].question,
-            'formula': self.mwps[index].equation,
+            'formula': equation,
             'answer': self.mwps[index].answer,
             'numbers': self.mwps[index].numbers
         }
@@ -20,8 +24,8 @@ class Build_Data(Dataset):
     def __len__(self):
         return self.len
 
-def batch_data(mwps, batch_size=1):
-    dataset = Build_Data(mwps)
+def batch_data(mwps, rpn=False, batch_size=1):
+    dataset = Build_Data(mwps, rpn)
     dataloader = DataLoader(dataset, batch_size=batch_size)
     return dataloader
 

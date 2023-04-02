@@ -33,7 +33,7 @@ def tokenise_formula(s):
     s = re.sub(r" +", r" ", s)
     return s.strip().split(" ")
 
-def tokensFromMWP(question, formula, rpn=False):
+def tokensFromMWP(question, formula):
     q_tokens = tokenise_question(question)
     a_tokens = tokenise_formula(formula)
 
@@ -58,7 +58,7 @@ def tokensFromMWP(question, formula, rpn=False):
                 # Drawbacks: real world knowledge, e.g. money, 'dozen'; numbers as lists of people; percentages; errors in dataset, non-trivial calculations
                 return None, None, None
     
-    if rpn:
-        a_tokens = infix_to_rpn(a_tokens)
+    # if rpn:
+    #     a_tokens = infix_to_rpn(a_tokens)
     
     return q_tokens, a_tokens, numbers

@@ -44,8 +44,8 @@ def run_experiment(config, mwps, nfold=10):
 
         q_lang, a_lang = generate_vocab(config, train_set)
 
-        train_loader = batch_data(train_set, config['batch_size'])
-        test_loader = batch_data(test_set, 1)
+        train_loader = batch_data(train_set, config['rpn'], config['batch_size'])
+        test_loader = batch_data(test_set, config['rpn'], 1)
 
         embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
         encoder = Encoder(config).to(device)
@@ -108,7 +108,7 @@ def save_model(embedding, encoder, decoder, q_lang, a_lang, path="model/"):
 
 # run_experiment(config)
 
-all_mwps, ids = load_data(config)
+all_mwps, ids = load_data()
 
 with open('data/test.txt') as file:
     test_ids = [line.rstrip() for line in file]
@@ -125,14 +125,14 @@ random.shuffle(mwps)
 
 run_experiments(config, ['rpn', 'attention', 'num_emb'], mwps, nfold=10)
 
-# train_set, test_set = train_test(mwps)
+# config['rpn'] = True
 
-
+# train_set, test_set = train_test(mwps, 0, 2)
 
 # q_lang, a_lang = generate_vocab(config, train_set)
 
-# train_loader = batch_data(train_set, config['batch_size'])
-# test_loader = batch_data(test_set, 1)
+# train_loader = batch_data(train_set, config['rpn'], config['batch_size'])
+# test_loader = batch_data(test_set, config['rpn'], 1)
 
 # embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
 # encoder = Encoder(config).to(device)
@@ -141,35 +141,5 @@ run_experiments(config, ['rpn', 'attention', 'num_emb'], mwps, nfold=10)
 # else:
 #     decoder = Decoder(config, a_lang.n_tokens).to(device)
 
-# max_acc, acc, iters = trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q_lang, a_lang, 50, print_every=5)
-
-# print(q_lang.n_tokens)
-
-
-# embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
-# encoder = Encoder(config).to(device)
-# if config["attention"]:
-#     decoder = AttnDecoder(config, a_lang.n_tokens).to(device)
-# else:
-#     decoder = Decoder(config, a_lang.n_tokens).to(device)
-
-# train_loader, test_loader = train_test(config, mwps)
-
-# max_acc, acc, iters = trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q_lang, a_lang, 50, print_every=5)
-
-# print(acc)
-
-# run_experiments(config, ['rpn', 'attention'])
-
-
-
-#             output += "Dataset: " + dataset + "\n"
-#             output += "RPN: " + ("True\n" if rpn else "False\n")
-#             output += "Num_emb: " + ("True\n" if num_emb else "False\n")
-#             output += f"Accuracy - max: {max_acc}, final: {acc}, overall: {overall_acc}, iters: {iters}\n"
-
-# print(output)
-
-# torch.save(embedding, 'asdiv-baseline-embedding.pt')
-# torch.save(encoder, 'asdiv-baseline-encoder.pt')
-# torch.save(decoder, 'asdiv-baseline-decoder.pt')
+# max_acc, acc, iters = trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q_lang, a_lang, 1, print_every=10)
+# print(f"Accuracy: {max_acc}")
