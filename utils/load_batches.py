@@ -25,14 +25,22 @@ def batch_data(mwps, batch_size=1):
     dataloader = DataLoader(dataset, batch_size=batch_size)
     return dataloader
 
-def train_test(config, mwps):
-    random.seed(1)
-    random.shuffle(mwps)
+def train_test(mwps, fold=0, nfold=10):
+    left_bound = math.floor(len(mwps) * fold / nfold)
+    right_bound = math.floor(len(mwps) * (fold + 1) / nfold)
 
-    boundary = math.floor(len(mwps) * 0.9)
-    print(len(mwps), boundary)
+    left = mwps[:left_bound]
+    fold = mwps[left_bound:right_bound]
+    right = mwps[right_bound:]
 
-    return mwps[:boundary], mwps[boundary:]
+    return left + right, fold
+
+
+    # boundary = math.floor(len(mwps) * 0.9)
+    # boundary = math.floor(len(mwps) * 0.9)
+    # print(len(mwps), boundary)
+
+    # return mwps[:boundary], mwps[boundary:]
 
     # train = batch_data(mwps[:boundary], batch_size=config["batch_size"])
     # test = batch_data(mwps[boundary:], batch_size=1)

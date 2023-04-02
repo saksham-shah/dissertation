@@ -108,32 +108,36 @@ class Lang:
         self.weights = weights
 
 def load_data(config):
-    mwps = []
+    mwps = {}
+    ids = []
 
-    if config["dataset"] == "asdiv":
-        with open('data/asdiv_a.txt') as file:
-            asdiv_a_ids = [line.rstrip() for line in file]
-        
-        tree = ET.parse('data/asdiv.xml')
-        root = tree.getroot()
+    # if config["dataset"] in ["asdiv", "both"]:
+    with open('data/asdiv_a.txt') as file:
+        asdiv_a_ids = [line.rstrip() for line in file]
+    
+    tree = ET.parse('data/asdiv.xml')
+    root = tree.getroot()
 
-        for child in root:
-            if child.attrib['ID'] in asdiv_a_ids:
-                mwp = MWP_from_asdiv(config, child)
-                if mwp is not None:
-                    mwps.append(mwp)
+    for child in root:
+        if child.attrib['ID'] in asdiv_a_ids:
+            mwp = MWP_from_asdiv(config, child)
+            if mwp is not None:
+                mwps[mwp.id] = mwp
+                ids.append(mwp.id)
             # else:
             #     print(child.find('Body').text + child.find('Question').text)
             #     print(child.find('Solution-Type').text)
             #     print(child.find('Formula').text + child.find('Answer').text)
-    elif config["dataset"] == "mawps":
-        with open('data/mawps.json') as file:
-            mawps = json.loads(file.read())
-            for mawps_q in mawps:
-                mwp = MWP_from_mawps(config, mawps_q)
-                if mwp is not None:
-                    mwps.append(mwp)
-    return mwps
+    
+    # if config["dataset"] in ["mawps", "both"]:
+    with open('data/mawps.json') as file:
+        mawps = json.loads(file.read())
+        for mawps_q in mawps:
+            mwp = MWP_from_mawps(config, mawps_q)
+            if mwp is not None:
+                mwps[mwp.id] = mwp
+                ids.append(mwp.id)
+    return mwps, ids
 
 def generate_vocab(config, mwps):
     q_lang = Lang()

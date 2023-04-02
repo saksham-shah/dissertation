@@ -85,6 +85,7 @@ def trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q
     acc = 0
     iter = 0
     epoch_since_improvement = 0
+    print_loss_avg = 0
 
     # train_loader, test_loader = train_test(config, mwps)
 
@@ -98,13 +99,17 @@ def trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q
             loss = train(config, input_tensor, target_tensor, input_lengths, target_lengths, numbers, embedding, encoder, decoder, embedding_optimiser, encoder_optimiser, decoder_optimiser, criterion)
             print_loss_total += loss
 
-            if count % print_every == 0:
+            if print_every > 0 and count % print_every == 0:
                 print_loss_avg = print_loss_total / print_every
                 print_loss_total = 0
                 print('%s (%d %d%%) %.4f' % (timeSince(start, count / n_iters / len(train_loader)), count, count / n_iters / len(train_loader) * 100, print_loss_avg))
         
+        if print_every == 0:
+            print_loss_avg = print_loss_total / len(train_loader)
+            print_loss_total = 0
+
         acc = accuracy(config, test_loader, embedding, encoder, decoder, q_lang, a_lang)
-        print ("%s epoch: %d, accurary: %.4f" % (timeSince(start, count / n_iters / len(train_loader)), iter, acc))
+        print ("%s epoch: %d, accurary: %.4f, loss: %.4f" % (timeSince(start, count / n_iters / len(train_loader)), iter, acc, print_loss_avg))
 
         # correct = 0
         # for mwp in test_loader:

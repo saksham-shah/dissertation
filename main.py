@@ -16,32 +16,57 @@ from evaluate import *
 #             config["rpn"] = rpn
 #             config["num_emb"] = num_emb
 
-def run_experiment(config):
-    mwps, q_lang, a_lang = load_data(config)
+# def run_experiment(config):
+#     mwps, q_lang, a_lang = load_data(config)
 
-    embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
-    encoder = Encoder(config).to(device)
-    if config["attention"]:
-        decoder = AttnDecoder(config, a_lang.n_tokens).to(device)
-    else:
-        decoder = Decoder(config, a_lang.n_tokens).to(device)
+#     embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
+#     encoder = Encoder(config).to(device)
+#     if config["attention"]:
+#         decoder = AttnDecoder(config, a_lang.n_tokens).to(device)
+#     else:
+#         decoder = Decoder(config, a_lang.n_tokens).to(device)
 
-    train_loader, test_loader = train_test(config, mwps)
+#     train_loader, test_loader = train_test(mwps)
 
-    max_acc, acc, iters = trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q_lang, a_lang, 50, print_every=5)
+#     max_acc, acc, iters = trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q_lang, a_lang, 50, print_every=5)
 
-    # overall_acc = accuracy(config, test_loader, embedding, encoder, decoder, q_lang, a_lang)
+#     # overall_acc = accuracy(config, test_loader, embedding, encoder, decoder, q_lang, a_lang)
 
-    print(acc)
+#     print(acc)
 
-    return max_acc, acc, iters
+#     return max_acc, acc, iters
+
+def run_experiment(config, mwps, nfold=10):
+    overall_acc = 0
+
+    for fold in range(nfold):
+        train_set, test_set = train_test(mwps, fold=fold, nfold=nfold)
+
+        q_lang, a_lang = generate_vocab(config, train_set)
+
+        train_loader = batch_data(train_set, config['batch_size'])
+        test_loader = batch_data(test_set, 1)
+
+        embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
+        encoder = Encoder(config).to(device)
+        if config["attention"]:
+            decoder = AttnDecoder(config, a_lang.n_tokens).to(device)
+        else:
+            decoder = Decoder(config, a_lang.n_tokens).to(device)
+
+        max_acc, acc, iters = trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q_lang, a_lang, 50, print_every=0)
+        print(f"Fold: {fold}, Accuracy: {max_acc}")
+
+        overall_acc += max_acc
+
+    return overall_acc / nfold
 
 options = {
     "batch_size": [1, 8],
     "dataset": ["asdiv", "mawps"],
 }
 
-args = ["rpn", "num_embs", "batch_size"]
+# args = ["rpn", "num_embs", "batch_size"]
 
 def get_config(base_config, args, exp_num):
     config = base_config.copy()
@@ -55,15 +80,16 @@ def get_config(base_config, args, exp_num):
             config[key] = active == 1
     return config
 
-def run_experiments(base_config, args):
+def run_experiments(base_config, args, mwps, nfold=10):
     output = ""
     args = args[::-1]
     for i in range(2 ** len(args)):
         config = get_config(base_config, args, i)
-        max_acc, acc, iters = run_experiment(config)
+        acc = run_experiment(config, mwps, nfold=nfold)
+        # max_acc, acc, iters = run_experiment(config, mwps, nfold=nfold)
 
         exp_str = format(i, f'0{len(args)}b')
-        exp_output = f"{exp_str} - max acc: {max_acc}, final acc: {acc}, iters: {iters}\n"
+        exp_output = f"{exp_str} - avg acc: {acc}\n"
         print(exp_output)
 
         output += exp_output
@@ -82,27 +108,42 @@ def save_model(embedding, encoder, decoder, q_lang, a_lang, path="model/"):
 
 # run_experiment(config)
 
-mwps = load_data(config)
+all_mwps, ids = load_data(config)
 
-for mwp in mwps:
-    print(mwp.id)
+with open('data/test.txt') as file:
+    test_ids = [line.rstrip() for line in file]
 
-train_set, test_set = train_test(config, mwps)
-q_lang, a_lang = generate_vocab(config, train_set)
+mwps = []
+for mwp in all_mwps:
+    if mwp not in test_ids:
+        if config["dataset"] == "both" or config["dataset"] == mwp[:5]:
+            mwps.append(all_mwps[mwp])
 
-train_loader = batch_data(train_set, config['batch_size'])
-test_loader = batch_data(test_set, 1)
+print(len(mwps))
 
-embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
-encoder = Encoder(config).to(device)
-if config["attention"]:
-    decoder = AttnDecoder(config, a_lang.n_tokens).to(device)
-else:
-    decoder = Decoder(config, a_lang.n_tokens).to(device)
+random.shuffle(mwps)
 
-max_acc, acc, iters = trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q_lang, a_lang, 50, print_every=5)
+run_experiments(config, ['rpn', 'attention', 'num_emb'], mwps, nfold=10)
 
-print(q_lang.n_tokens)
+# train_set, test_set = train_test(mwps)
+
+
+
+# q_lang, a_lang = generate_vocab(config, train_set)
+
+# train_loader = batch_data(train_set, config['batch_size'])
+# test_loader = batch_data(test_set, 1)
+
+# embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
+# encoder = Encoder(config).to(device)
+# if config["attention"]:
+#     decoder = AttnDecoder(config, a_lang.n_tokens).to(device)
+# else:
+#     decoder = Decoder(config, a_lang.n_tokens).to(device)
+
+# max_acc, acc, iters = trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q_lang, a_lang, 50, print_every=5)
+
+# print(q_lang.n_tokens)
 
 
 # embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
