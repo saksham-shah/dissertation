@@ -48,14 +48,14 @@ def MWP_from_asdiv(config, xml_problem):
         # print(body + question)
         # print(formula + "<>" + answer)
         return None
-    
-    print(formula)
-    
+        
     solution_attrib = xml_problem.find('Solution-Type').attrib
     if 'UnitTrans' in solution_attrib:
         # print(body + question)
         # print(formula)
         return None
+    
+    id = "asdiv" + str(id.split("-")[1])
 
     equation = formula.split('=')[0]
     answer = float(re.sub(r" \(.+\)", r"", answer))
@@ -67,7 +67,7 @@ def MWP_from_asdiv(config, xml_problem):
     return create_MWP(config, id, question, equation, answer)
 
 def MWP_from_mawps(config, mawps):
-    id = mawps["id"]
+    id = "mawps" + str(mawps["id"])
     question = mawps["original_text"]
     answer = float(mawps["ans"])
 

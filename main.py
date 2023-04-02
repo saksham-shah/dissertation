@@ -83,6 +83,10 @@ def save_model(embedding, encoder, decoder, q_lang, a_lang, path="model/"):
 # run_experiment(config)
 
 mwps = load_data(config)
+
+for mwp in mwps:
+    print(mwp.id)
+
 train_set, test_set = train_test(config, mwps)
 q_lang, a_lang = generate_vocab(config, train_set)
 

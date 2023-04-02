@@ -54,6 +54,8 @@ def tokensFromMWP(question, formula, rpn=False):
             if num in numbers:
                 a_tokens[i] = "#" + str(numbers.index(num))
             else:
+                # print(question, formula)
+                # Drawbacks: real world knowledge, e.g. money, 'dozen'; numbers as lists of people; percentages; errors in dataset, non-trivial calculations
                 return None, None, None
     
     if rpn:

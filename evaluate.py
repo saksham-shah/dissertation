@@ -19,9 +19,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #     tensor = torch.tensor(indexes, dtype=torch.long, device=device)
 #     return tensor
 
-def evaluate(config, embedding, encoder, decoder, tokens, numbers, q_lang, a_lang, max_length = 120):
+def evaluate(config, embedding, encoder, decoder, tokens, numbers, token2index, index2token, max_length = 120):
     with torch.no_grad():
-        input_tensor = tensorFromTokens(q_lang, tokens).view(-1, 1)
+        input_tensor = tensorFromTokens(token2index, tokens).view(-1, 1)
         input_length = input_tensor.size()[0]
         
         input_tensor = embedding(input_tensor, numbers, torch.tensor([0], device=device))
@@ -46,7 +46,7 @@ def evaluate(config, embedding, encoder, decoder, tokens, numbers, q_lang, a_lan
                 decoded_words.append('<EOS>')
                 break
             else:
-                decoded_words.append(a_lang.index2token[topi.item()])
+                decoded_words.append(index2token[topi.item()])
 
             decoder_input = topi.squeeze().detach().unsqueeze(0)
 
@@ -85,7 +85,7 @@ def accuracy(config, test_set, embedding, encoder, decoder, q_lang, a_lang, prin
         # q_tokens, a_tokens, numbers = tokensFromMWP(mwp.question, mwp.equation)
         q_tokens, a_tokens = mwp['question'][0].split(" "), mwp['formula'][0].split(" ")
         numbers = list(map(float, mwp['numbers'][0].split(",")))
-        output_words, attentions = evaluate(config, embedding, encoder, decoder, q_tokens, [numbers], q_lang, a_lang)
+        output_words, attentions = evaluate(config, embedding, encoder, decoder, q_tokens, [numbers], q_lang.token2index, a_lang.index2token)
 
         if check(config, output_words, a_tokens, mwp['answer'][0], numbers):
             correct += 1

@@ -4,25 +4,25 @@ from utils.process_input import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def indexesFromTokens(lang, tokens):
-    def index_from_token(lang, token):
-        if token in lang.token2index:
-            return lang.token2index[token]
-        return lang.token2index['UNK']
+def indexesFromTokens(token2index, tokens):
+    def index_from_token(token2index, token):
+        if token in token2index:
+            return token2index[token]
+        return token2index['UNK']
     
-    indexes = [index_from_token(lang, token) for token in tokens]
+    indexes = [index_from_token(token2index, token) for token in tokens]
     indexes.append(EOS_token)
     return indexes
 
-def tensorFromTokens(lang, tokens):
-    indexes = indexesFromTokens(lang, tokens)
+def tensorFromTokens(token2index, tokens):
+    indexes = indexesFromTokens(token2index, tokens)
     tensor = torch.tensor(indexes, dtype=torch.long, device=device)
     return tensor
 
-def tensorsFromPair(lang, pair):
-    input_tensor = tensorFromTokens(lang, pair[0])
-    target_tensor = tensorFromTokens(lang, pair[1])
-    return (input_tensor, target_tensor)
+# def tensorsFromPair(lang, pair):
+#     input_tensor = tensorFromTokens(token2index, pair[0])
+#     target_tensor = tensorFromTokens(token2index, pair[1])
+#     return (input_tensor, target_tensor)
 
 def pad_indexes(indexes, max_length):
     indexes += [EOS_token for i in range(max_length - len(indexes))]
@@ -34,8 +34,8 @@ def indexesFromPairs(questions, formulas, q_lang, a_lang, rpn=False):
     # a_indexes = [indexesFromTokens(a_lang, a) for _,a,_ in all_tokens]
     # numbers = [n for _,_,n in all_tokens]
 
-    q_indexes = [indexesFromTokens(q_lang, q.split(" ")) for q in questions]
-    a_indexes = [indexesFromTokens(a_lang, a.split(" ")) for a in formulas]
+    q_indexes = [indexesFromTokens(q_lang.token2index, q.split(" ")) for q in questions]
+    a_indexes = [indexesFromTokens(a_lang.token2index, a.split(" ")) for a in formulas]
 
     numbers = []
 
