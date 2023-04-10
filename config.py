@@ -10,6 +10,6 @@ config = {
     "rpn": False,
     "num_emb": False,
     "embedding_size": 300,
-    "dataset": "asdiv",
-    "attention": False,
+    "dataset": ["asdiv"],
+    "attention": True,
 }

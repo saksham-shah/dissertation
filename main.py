@@ -116,7 +116,7 @@ with open('data/test.txt') as file:
 mwps = []
 for mwp in all_mwps:
     if mwp not in test_ids:
-        if config["dataset"] == "both" or config["dataset"] == mwp[:5]:
+        if mwp[:5] in config["dataset"]:
             mwps.append(all_mwps[mwp])
 
 print(len(mwps))

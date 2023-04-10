@@ -80,6 +80,17 @@ def MWP_from_mawps(mawps):
 
     return create_MWP(id, question, equation, answer)
 
+def MWP_from_svamp(svamp):
+    id = "svamp" + str(svamp["ID"].split("-")[1])
+    question = svamp["Body"] + svamp["Question"]
+    question = re.sub(r"([?$])", r" \1 ", question)
+    question = re.sub(r"([.,])([^0-9])", r" \1 \2", question)
+
+    answer = float(svamp["Answer"])
+    equation = svamp["Equation"]
+
+    return create_MWP(id, question, equation, answer)
+
 SOS_token = 0
 EOS_token = 1
 
@@ -132,11 +143,22 @@ def load_data():
     # if config["dataset"] in ["mawps", "both"]:
     with open('data/mawps.json') as file:
         mawps = json.loads(file.read())
-        for mawps_q in mawps:
-            mwp = MWP_from_mawps(mawps_q)
-            if mwp is not None:
-                mwps[mwp.id] = mwp
-                ids.append(mwp.id)
+
+    for mawps_q in mawps:
+        mwp = MWP_from_mawps(mawps_q)
+        if mwp is not None:
+            mwps[mwp.id] = mwp
+            ids.append(mwp.id)
+    
+    with open('data/svamp.json') as file:
+        svamp = json.loads(file.read())
+        
+    for svamp_q in svamp:
+        mwp = MWP_from_svamp(svamp_q)
+        if mwp is not None:
+            mwps[mwp.id] = mwp
+            ids.append(mwp.id)
+
     return mwps, ids
 
 def generate_vocab(config, mwps):
