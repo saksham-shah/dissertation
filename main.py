@@ -124,11 +124,22 @@ def save_model(embedding, encoder, decoder, q_lang, a_lang, path="model/"):
 
 # random.shuffle(mwps)
 
-mwps = prepare_training_data(config['dataset'])
+# mwps = prepare_training_data(config['dataset'])
 
-folds_avg, folds = run_experiments(config, ['batch_size', 'dataset', 'rpn', 'attention', 'num_emb'], mwps, nfold=9)
+# folds_avg, folds = run_experiments(config, ['batch_size', 'rpn', 'attention', 'num_emb'], mwps, nfold=9)
 
-t_stat, is_better = paired_t_test(folds)
+# t_stat, is_better = paired_t_test(folds)
+
+# np.savetxt('folds.csv', folds, delimiter=',')
+# np.savetxt('t_stat.csv', t_stat, delimiter=',')
+# np.savetxt('is_better.csv', is_better, delimiter=',')
+
+is_better = np.loadtxt('results/asdiv/is_better.csv', delimiter=',')
+folds = np.loadtxt('results/asdiv/folds.csv', delimiter=',')
+t_stat = np.loadtxt('results/asdiv/t_stat.csv', delimiter=',')
+print(is_better)
+print(t_stat)
+print(folds)
 
 # config['rpn'] = True
 

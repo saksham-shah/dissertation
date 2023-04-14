@@ -59,7 +59,7 @@ class AttnDecoder(nn.Module):
             embedded = embedded.view(1, 1, self.embedding_size)
 
         # Calculate the attention weights
-        attention_weights = self.attention(hidden[0], encoder_outputs) # batch, 1, seq_len
+        attention_weights = self.attention(hidden[0], encoder_outputs) # batch, seq_len
 
         context = torch.bmm(attention_weights.unsqueeze(1), encoder_outputs.permute(1, 0, 2))
         context = context.permute(1, 0, 2) # 1, batch, hidden

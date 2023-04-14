@@ -22,6 +22,8 @@ class Classifier(nn.Module):
 
         self.q_encoder = Encoder(config)
         self.a_encoder = Encoder(config)
+
+        self.attention = Attention(self.hidden_size)
         
         self.fc1 = nn.Linear(self.hidden_size * 2, hidden_1)
         self.fc2 = nn.Linear(hidden_1, hidden_2)
@@ -40,10 +42,18 @@ class Classifier(nn.Module):
         q_decoder_hidden = (q_hidden[0][:self.q_encoder.num_layers], q_hidden[1][:self.q_encoder.num_layers])
         a_decoder_hidden = (a_hidden[0][:self.a_encoder.num_layers], a_hidden[1][:self.a_encoder.num_layers])
 
-        print(q_output.shape, q_decoder_hidden[0].shape)
-        print(a_output.shape, a_decoder_hidden[0].shape)
+        q_attention_weights = self.attention(q_decoder_hidden[0], q_output)
+        a_attention_weights = self.attention(a_decoder_hidden[0], a_output)
 
-        context = torch.concat([q_decoder_hidden[0], a_decoder_hidden[0]], dim=2).squeeze(0)
+        q_context = torch.bmm(q_attention_weights.unsqueeze(1), q_output.permute(1, 0, 2))
+        a_context = torch.bmm(a_attention_weights.unsqueeze(1), a_output.permute(1, 0, 2))
+        q_context = q_context.permute(1, 0, 2) # 1, batch, hidden
+        a_context = a_context.permute(1, 0, 2) # 1, batch, hidden
+
+        # print(q_output.shape, q_decoder_hidden[0].shape)
+        # print(a_output.shape, a_decoder_hidden[0].shape)
+
+        context = torch.concat([q_context, a_context], dim=2).squeeze(0)
 
         print(context.shape)
 
