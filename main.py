@@ -124,22 +124,57 @@ def save_model(embedding, encoder, decoder, q_lang, a_lang, path="model/"):
 
 # random.shuffle(mwps)
 
-# mwps = prepare_training_data(config['dataset'])
+mwps = prepare_training_data(config['dataset'])
 
-# folds_avg, folds = run_experiments(config, ['batch_size', 'rpn', 'attention', 'num_emb'], mwps, nfold=9)
+folds_avg, folds = run_experiments(config, {
+    "hidden_size": [64, 128, 256, 512],
+    "batch_size": [1, 2],
+}, mwps, nfold=9, binary=False)
+# folds_avg, folds = run_experiments(config, ['rpn'], mwps, nfold=9)
 
-# t_stat, is_better = paired_t_test(folds)
+t_stat, is_better = paired_t_test(folds)
 
-# np.savetxt('folds.csv', folds, delimiter=',')
-# np.savetxt('t_stat.csv', t_stat, delimiter=',')
-# np.savetxt('is_better.csv', is_better, delimiter=',')
+np.savetxt('folds.csv', folds, delimiter=',')
+np.savetxt('t_stat.csv', t_stat, delimiter=',')
+np.savetxt('is_better.csv', is_better, delimiter=',')
 
-is_better = np.loadtxt('results/asdiv/is_better.csv', delimiter=',')
-folds = np.loadtxt('results/asdiv/folds.csv', delimiter=',')
-t_stat = np.loadtxt('results/asdiv/t_stat.csv', delimiter=',')
-print(is_better)
-print(t_stat)
-print(folds)
+# is_better = np.loadtxt('results/combined/is_better.csv', delimiter=',')
+# folds = np.loadtxt('results/combined/folds.csv', delimiter=',')
+# t_stat = np.loadtxt('results/combined/t_stat.csv', delimiter=',')
+# print(is_better)
+# print(np.loadtxt('results/asdiv/is_better.csv', delimiter=','))
+# print(t_stat > 2.306)
+
+
+# def accuracy(config, test_set):
+#     correct = 0
+#     incorrect = 0
+#     for mwp in test_set:
+#         # q_tokens, a_tokens, numbers = tokensFromMWP(mwp.question, mwp.equation)
+#         a_tokens = mwp['formula'][0].split(" ")
+#         numbers = list(map(float, mwp['numbers'][0].split(",")))
+
+#         if check(config, a_tokens, a_tokens, mwp['answer'][0], numbers):
+#             correct += 1
+#         else:
+#             incorrect += 1
+#             # print(mwp)
+#     print(f"Incorrect: {incorrect}")
+#     print("Accuracy:", correct / len(test_set))
+#     return correct / len(test_set)
+
+
+
+# print(len(mwps))
+
+# train_set, test_set = train_test(mwps, 0, 2)
+# train_loader = batch_data(mwps, config['rpn'], 1)
+
+# print(len(train_loader))
+
+# accuracy(config, train_loader)
+
+# print(folds)
 
 # config['rpn'] = True
 

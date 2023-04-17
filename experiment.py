@@ -53,13 +53,35 @@ def get_config(base_config, args, exp_num):
             config[key] = active == 1
     return config
 
-def run_experiments(base_config, args, mwps, nfold=10):
+def get_config_general(base_config, args, exp_num):
+    config = base_config.copy()
+
+    for key in args:
+        num_options = len(args[key])
+        index = exp_num % num_options
+        exp_num = math.floor(exp_num / num_options)
+        config[key] = args[key][index]
+
+    return config
+
+def run_experiments(base_config, args, mwps, nfold=10, binary=True):
     output = ""
-    args = args[::-1]
     folds = []
     folds_avg = []
-    for i in range(2 ** len(args)):
-        config = get_config(base_config, args, i)
+    if binary:
+        args = args[::-1]
+        num_exps = 2 ** len(args)
+    else:
+        args = dict(reversed(args.items()))
+        num_exps = 1
+        for key in args:
+            num_exps *= len(args[key])
+    for i in range(num_exps):
+        if binary:
+            config = get_config(base_config, args, i)
+        else:
+            config = get_config_general(base_config, args, i)
+
         acc, fold_accs = run_experiment(config, mwps, nfold=nfold)
         folds.append(fold_accs)
         folds_avg.append(acc)

@@ -55,8 +55,6 @@ class Classifier(nn.Module):
 
         context = torch.concat([q_context, a_context], dim=2).squeeze(0)
 
-        print(context.shape)
-
 
         # output = torch.concat([q_output[0], a_output[0]], dim=0)
 
