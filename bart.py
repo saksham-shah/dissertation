@@ -91,18 +91,18 @@ def tokenise_data(tokeniser, inputs, targets):
     return train_dataset, test_dataset
 
 def train_model(config, model, tokeniser, train_dataset, test_dataset, test_mwps):
-    batch_size = config["batch_size"]
+    batch_size = 16 # config["batch_size"]
     args = Seq2SeqTrainingArguments(
         f"{model_checkpoint}-finetunes-mawps",
         evaluation_strategy = "epoch",
         logging_strategy="epoch",
         save_strategy="epoch",
-        learning_rate=config["learning_rate"],
+        learning_rate=2e-5, # config["learning_rate"],
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        weight_decay=config["weight_decay"],
+        weight_decay=0.01, # config["weight_decay"],
         save_total_limit=3,
-        num_train_epochs=config["epochs"],
+        num_train_epochs=50, # config["epochs"],
         predict_with_generate=True,
         load_best_model_at_end=True,
         metric_for_best_model="accuracy",
@@ -188,18 +188,18 @@ def evaluate_accuracy(model, tokeniser, inputs, targets, mwps):
 
     return correct / len(inputs)
 
-tokeniser = AutoTokenizer.from_pretrained(model_checkpoint)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)#.to(device)
+# tokeniser = AutoTokenizer.from_pretrained(model_checkpoint)
+# model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)#.to(device)
 
-inputs, targets, mwps = get_data(config)
-print(f"# train: {len(inputs['train'])}, # test: {len(inputs['test'])}")
-train_dataset, test_dataset = tokenise_data(tokeniser, inputs, targets)
+# inputs, targets, mwps = get_data(config)
+# print(f"# train: {len(inputs['train'])}, # test: {len(inputs['test'])}")
+# train_dataset, test_dataset = tokenise_data(tokeniser, inputs, targets)
+
+# # print(evaluate_accuracy(model, tokeniser, inputs['test'], targets['test'], mwps['test']))
+
+# trainer = train_model(config, model, tokeniser, train_dataset, test_dataset, mwps['test'])
+
+# print("Saving...")
+# trainer.save_model('./bart_model_trained')
 
 # print(evaluate_accuracy(model, tokeniser, inputs['test'], targets['test'], mwps['test']))
-
-trainer = train_model(config, model, tokeniser, train_dataset, test_dataset, mwps['test'])
-
-print("Saving...")
-trainer.save_model('./bart_model_trained')
-
-print(evaluate_accuracy(model, tokeniser, inputs['test'], targets['test'], mwps['test']))

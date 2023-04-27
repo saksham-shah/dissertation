@@ -9,29 +9,29 @@ from timeit import default_timer as timer
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-all_mwps, ids = load_data()
+# all_mwps, ids = load_data()
 
-with open('data/test.txt') as file:
-    test_ids = [line.rstrip() for line in file]
+# with open('data/test.txt') as file:
+#     test_ids = [line.rstrip() for line in file]
 
-mwps = []
-for mwp in all_mwps:
-    if mwp not in test_ids:
-        if mwp[:5] in config["dataset"]:
-            mwps.append(all_mwps[mwp])
+# mwps = []
+# for mwp in all_mwps:
+#     if mwp not in test_ids:
+#         if mwp[:5] in config["dataset"]:
+#             mwps.append(all_mwps[mwp])
 
-print(len(mwps))
+# print(len(mwps))
 
-random.shuffle(mwps)
+# random.shuffle(mwps)
 
-valid_mwps = []
+# valid_mwps = []
 
-for mwp in mwps:
-    if len(mwp.numbers.split(",")) <= 3:
-        if len(mwp.equation.split(" ")) <= 3:
-            valid_mwps.append(mwp)
+# for mwp in mwps:
+#     if len(mwp.numbers.split(",")) <= 3:
+#         if len(mwp.equation.split(" ")) <= 3:
+#             valid_mwps.append(mwp)
 
-print(len(valid_mwps))
+# print(len(valid_mwps))
 # mwps = valid_mwps
 
 def get_all_equations():
@@ -76,21 +76,21 @@ def is_equivalent(e1, e2):
 
 all_equations = get_all_equations()
 
-train_set, test_set = train_test(valid_mwps)
+# train_set, test_set = train_test(valid_mwps)
 
-config['rpn'] = True
-config['dataset'] = ['asdiv']
+# config['rpn'] = True
+# config['dataset'] = ['asdiv']
 
-q_lang, a_lang = generate_vocab(config, train_set)
+# q_lang, a_lang = generate_vocab(config, train_set)
 
-train_loader = batch_data(train_set, config['rpn'], config['batch_size'])
-test_loader = batch_data(test_set, config['rpn'], 1)
+# train_loader = batch_data(train_set, config['rpn'], config['batch_size'])
+# test_loader = batch_data(test_set, config['rpn'], 1)
 
-# embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
-classifier = Classifier(config, q_lang.n_tokens, a_lang.n_tokens, q_lang, a_lang).to(device)
+# # embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
+# classifier = Classifier(config, q_lang.n_tokens, a_lang.n_tokens, q_lang, a_lang).to(device)
 
-optimiser = torch.optim.Adam(classifier.parameters(), lr=config['learning_rate'])
-criterion = torch.nn.BCELoss()
+# optimiser = torch.optim.Adam(classifier.parameters(), lr=config['learning_rate'])
+# criterion = torch.nn.BCELoss()
 
 force_correct = 0.5
 
@@ -160,14 +160,14 @@ def train(config, model, train_loader, optimiser, criterion, q_lang, a_lang):
 
     return losses / len(list(train_loader)) / len(all_equations)
 
-NUM_EPOCHS = 50
+# NUM_EPOCHS = 50
 
-for epoch in range(1, NUM_EPOCHS+1):
-    start_time = timer()
-    train_loss = train(config, classifier, train_loader, optimiser, criterion, q_lang, a_lang)
-    val_loss = evaluate(config, classifier, test_loader, q_lang, a_lang)
-    # print(f"Epoch {epoch}: loss={train_loss}")
-    end_time = timer()
-    print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, Val acc: {val_loss:.3f}, "f"Epoch time = {(end_time - start_time):.3f}s"))
+# for epoch in range(1, NUM_EPOCHS+1):
+#     start_time = timer()
+#     train_loss = train(config, classifier, train_loader, optimiser, criterion, q_lang, a_lang)
+#     val_loss = evaluate(config, classifier, test_loader, q_lang, a_lang)
+#     # print(f"Epoch {epoch}: loss={train_loss}")
+#     end_time = timer()
+#     print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, Val acc: {val_loss:.3f}, "f"Epoch time = {(end_time - start_time):.3f}s"))
 
-torch.save(classifier, 'classifier-final.pt')
+# torch.save(classifier, 'classifier-final.pt')

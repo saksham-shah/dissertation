@@ -19,9 +19,11 @@ config = {
 }
 
 # Load all data
+print("Loading data")
 all_mwps, ids = load_data()
 
 # Split into train and test
+print("Splitting data")
 with open('data/test.txt') as file:
     test_ids = [line.rstrip() for line in file]
 
@@ -34,6 +36,9 @@ for mwp in all_mwps:
         else:
             train_mwps.append(all_mwps[mwp])
 
+train_mwps = train_mwps[:10]
+test_mwps = test_mwps[:10]
+
 random.shuffle(train_mwps)
 random.shuffle(test_mwps)
 
@@ -41,7 +46,7 @@ random.shuffle(test_mwps)
 def train_seq2seq(config, train_set, test_set):
     q_lang, a_lang = generate_vocab(config, train_set)
 
-    train_loader = batch_data(train_set, config['rpn'], config['batch_size'])
+    train_loader = batch_data(train_set, config['rpn'], 1) # config['batch_size']
     test_loader = batch_data(test_set, config['rpn'], 1)
 
     embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
@@ -55,15 +60,18 @@ def train_seq2seq(config, train_set, test_set):
     print(f"Accuracy: {max_acc}")
 
 # Train vanilla model
+print("Vanilla seq2seq")
 train_seq2seq(config, train_mwps, test_mwps)
 
 # Train improved model
+print("Improved seq2seq")
 config['rpn'] = True
 config['attention'] = True
 config['num_embs'] = True
 train_seq2seq(config, train_mwps, test_mwps)
 
-# Train BART TODO: fix config references in bart.py
+# Train BART
+print("BART")
 train_data = list(map(mwp_to_dict, train_mwps))
 test_data = list(map(mwp_to_dict, test_mwps))
 
@@ -82,15 +90,18 @@ model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint).to(device)
 
 train_dataset, test_dataset = tokenise_data(tokeniser, inputs, targets)
 
-trainer = train_model(config, model, tokeniser, train_dataset, test_dataset, test_mwps)
+trainer = train_model(config, model, tokeniser, train_dataset, test_dataset, test_data)
 
 # print(evaluate_accuracy(model, tokeniser, inputs['test'], targets['test'], mwps['test']))
 
 # Train classifier
-q_lang, a_lang = generate_vocab(config, train_set)
+print("Classifier")
+q_lang, a_lang = generate_vocab(config, train_mwps)
 
-train_loader = batch_data(train_set, True, config['batch_size'])
-test_loader = batch_data(test_set, True, 1)
+print(q_lang.token2index)
+
+train_loader = batch_data(train_mwps, True, 1) # config['batch_size']
+test_loader = batch_data(test_mwps, True, 1)
 
 # embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
 classifier = Classifier(config, q_lang.n_tokens, a_lang.n_tokens, q_lang, a_lang).to(device)
