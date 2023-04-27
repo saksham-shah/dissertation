@@ -169,3 +169,5 @@ for epoch in range(1, NUM_EPOCHS+1):
     # print(f"Epoch {epoch}: loss={train_loss}")
     end_time = timer()
     print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, Val acc: {val_loss:.3f}, "f"Epoch time = {(end_time - start_time):.3f}s"))
+
+torch.save(classifier, 'classifier-final.pt')

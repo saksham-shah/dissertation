@@ -142,6 +142,8 @@ def train_model(config, model, tokeniser, train_dataset, test_dataset, test_mwps
 
     trainer.train()
 
+    return trainer
+
 def is_correct(model, input_tokens, target, numbers, answer, tokeniser, attempts=3):
     for _ in range(attempts):
         pred_tokens = model.generate(input_tokens['input_ids'], num_beams=4, max_length=32, early_stopping=True)
@@ -190,7 +192,9 @@ train_dataset, test_dataset = tokenise_data(tokeniser, inputs, targets)
 
 # print(evaluate_accuracy(model, tokeniser, inputs['test'], targets['test'], mwps['test']))
 
-train_model(config, model, tokeniser, train_dataset, test_dataset, mwps['test'])
+trainer = train_model(config, model, tokeniser, train_dataset, test_dataset, mwps['test'])
+
+print("Saving...")
+trainer.save_model('./bart_model_trained')
 
 print(evaluate_accuracy(model, tokeniser, inputs['test'], targets['test'], mwps['test']))
-
