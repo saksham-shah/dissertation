@@ -47,9 +47,14 @@ class MWPDataset(torch.utils.data.Dataset):
     self.targets = targets
 
   def __getitem__(self, idx):
-    item = {key: torch.tensor(val[idx], device=device) for key, val in self.inputs.items()}
-    item['labels'] = torch.tensor(self.targets['input_ids'][idx], device=device)
+    item = {key: torch.tensor(val[idx]) for key, val in self.inputs.items()}
+    item['labels'] = torch.tensor(self.targets['input_ids'][idx])
     return item
+
+#   def __getitem__(self, idx):
+#     item = {key: torch.tensor(val[idx], device=device) for key, val in self.inputs.items()}
+#     item['labels'] = torch.tensor(self.targets['input_ids'][idx], device=device)
+#     return item
   
   def __len__(self):
     return len(self.inputs['input_ids'])
@@ -146,7 +151,7 @@ def train_model(config, model, tokeniser, train_dataset, test_dataset, test_mwps
 
 def is_correct(model, input_tokens, target, numbers, answer, tokeniser, attempts=3):
     for _ in range(attempts):
-        pred_tokens = model.generate(input_tokens['input_ids'], num_beams=4, max_length=32, early_stopping=True)
+        pred_tokens = model.generate(input_tokens['input_ids'].to(device), num_beams=4, max_length=32, early_stopping=True)
         pred = [tokeniser.decode(token, skip_special_tokens=True, clean_up_tokenization_spaces=False) for token in pred_tokens]
 
         rpn_exp = infix_to_rpn(pred[0].split(" "))
@@ -176,7 +181,7 @@ def evaluate_accuracy(model, tokeniser, inputs, targets, mwps):
         answer = mwp["answer"]
 
         input_tokens = tokeniser([input], max_length=1024, return_tensors='pt')
-        input_tokens['input_ids'].to(device)
+        input_tokens['input_ids']#.to(device)
 
         if is_correct(model, input_tokens, target, numbers, answer, tokeniser):
             correct += 1
@@ -184,7 +189,7 @@ def evaluate_accuracy(model, tokeniser, inputs, targets, mwps):
     return correct / len(inputs)
 
 tokeniser = AutoTokenizer.from_pretrained(model_checkpoint)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint).to(device)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)#.to(device)
 
 inputs, targets, mwps = get_data(config)
 print(f"# train: {len(inputs['train'])}, # test: {len(inputs['test'])}")

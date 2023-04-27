@@ -126,10 +126,10 @@ def save_model(embedding, encoder, decoder, q_lang, a_lang, path="model/"):
 
 mwps = prepare_training_data(config['dataset'])
 
-folds_avg, folds = run_experiments(config, {
-    "hidden_size": [64, 128, 256, 512],
-    "batch_size": [1, 2],
-}, mwps, nfold=9, binary=False)
+# folds_avg, folds = run_experiments(config, {
+#     "hidden_size": [64, 128, 256, 512],
+#     "batch_size": [1, 2],
+# }, mwps, nfold=9, binary=False)
 # # folds_avg, folds = run_experiments(config, ['rpn'], mwps, nfold=9)
 # folds = np.loadtxt('results/hyperparameter/folds.csv', delimiter=',')
 # t_stat, is_better = paired_t_test(folds)
