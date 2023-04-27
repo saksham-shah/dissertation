@@ -107,8 +107,7 @@ def evaluate(config, model, test_loader, q_lang, a_lang):
         for equation in all_equations:
 
             a_tensor = tensorFromTokens(a_lang.token2index, equation.split(" ")).view(-1, 1)
-
-            output = model(q_tensor, a_tensor, [q_tensor.size(0)], [a_tensor.size(0)], numbers)
+            output = model(q_tensor, a_tensor, [q_tensor.size(0)], [a_tensor.size(0)], [numbers])
 
             if output > max_output:
                 max_output = output

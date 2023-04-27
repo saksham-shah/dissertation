@@ -72,7 +72,7 @@ def run_experiments(base_config, args, mwps, nfold=10, binary=True):
         args = args[::-1]
         num_exps = 2 ** len(args)
     else:
-        args = dict(reversed(args.items()))
+        args = dict(reversed(list(args.items())))
         num_exps = 1
         for key in args:
             num_exps *= len(args[key])
