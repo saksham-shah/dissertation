@@ -37,6 +37,8 @@ def prepare_data():
             else:
                 train_mwps.append(all_mwps[mwp])
 
+    print(f"# train: {len(train_mwps)}, # test: {len(test_mwps)}")
+
     # train_mwps = train_mwps[:10]
     # test_mwps = test_mwps[:10]
 
@@ -108,7 +110,7 @@ targets = {
 }
 
 tokeniser = AutoTokenizer.from_pretrained(model_checkpoint)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint).to(device)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)#.to(device)
 
 train_dataset, test_dataset = tokenise_data(tokeniser, inputs, targets)
 
@@ -124,7 +126,7 @@ print("Classifier")
 train_mwps, test_mwps = prepare_data()
 q_lang, a_lang = generate_vocab(config, train_mwps)
 
-print(q_lang.token2index)
+# print(q_lang.token2index)
 
 train_loader = batch_data(train_mwps, True, 1) # config['batch_size']
 test_loader = batch_data(test_mwps, True, 1)
