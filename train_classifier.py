@@ -153,8 +153,8 @@ def train(config, model, train_loader, optimiser, criterion, q_lang, a_lang):
             optimiser.step()
             losses += loss.item()
 
-            if count % 1000 == 0:
-                print(f"Progress={(count * 100 / len(list(train_loader)) / len(all_equations)):.3f}%, loss={loss.item()}")
+            # if count % 1000 == 0:
+            #     print(f"Progress={(count * 100 / len(list(train_loader)) / len(all_equations)):.3f}%, loss={loss.item()}")
 
             count += 1
 

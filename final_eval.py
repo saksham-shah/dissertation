@@ -19,28 +19,30 @@ config = {
 }
 
 # Load all data
-print("Loading data")
-all_mwps, ids = load_data()
+def prepare_data():
+    print("Loading data")
+    all_mwps, ids = load_data()
 
-# Split into train and test
-print("Splitting data")
-with open('data/test.txt') as file:
-    test_ids = [line.rstrip() for line in file]
+    # Split into train and test
+    print("Splitting data")
+    with open('data/test.txt') as file:
+        test_ids = [line.rstrip() for line in file]
 
-train_mwps = []
-test_mwps = []
-for mwp in all_mwps:
-    if mwp[:5] in ["asdiv", "mawps"]:
-        if mwp in test_ids:
-            test_mwps.append(all_mwps[mwp])
-        else:
-            train_mwps.append(all_mwps[mwp])
+    train_mwps = []
+    test_mwps = []
+    for mwp in all_mwps:
+        if mwp[:5] in ["asdiv", "mawps"]:
+            if mwp in test_ids:
+                test_mwps.append(all_mwps[mwp])
+            else:
+                train_mwps.append(all_mwps[mwp])
 
-train_mwps = train_mwps[:10]
-test_mwps = test_mwps[:10]
+    # train_mwps = train_mwps[:10]
+    # test_mwps = test_mwps[:10]
 
-random.shuffle(train_mwps)
-random.shuffle(test_mwps)
+    # random.shuffle(train_mwps)
+    # random.shuffle(test_mwps)
+    return train_mwps, test_mwps
 
 # Train seq2seq models
 def train_seq2seq(config, train_set, test_set):
@@ -58,20 +60,40 @@ def train_seq2seq(config, train_set, test_set):
 
     max_acc, acc, iters = trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q_lang, a_lang, 50, print_every=0)
     print(f"Accuracy: {max_acc}")
+    return embedding, encoder, decoder, q_lang, a_lang
 
 # Train vanilla model
 print("Vanilla seq2seq")
-train_seq2seq(config, train_mwps, test_mwps)
+train_mwps, test_mwps = prepare_data()
+embedding, encoder, decoder, q_lang, a_lang = train_seq2seq(config, train_mwps, test_mwps)
+print("Saving baseline")
+torch.save({
+    'embedding': embedding,
+    'encoder': encoder,
+    'decoder': decoder,
+    'token2index': q_lang.token2index,
+    'index2token': a_lang.index2token,
+}, 'final/baseline.pt')
 
 # Train improved model
 print("Improved seq2seq")
+train_mwps, test_mwps = prepare_data()
 config['rpn'] = True
 config['attention'] = True
 config['num_embs'] = True
-train_seq2seq(config, train_mwps, test_mwps)
+embedding, encoder, decoder, q_lang, a_lang = train_seq2seq(config, train_mwps, test_mwps)
+print("Saving improved")
+torch.save({
+    'embedding': embedding,
+    'encoder': encoder,
+    'decoder': decoder,
+    'token2index': q_lang.token2index,
+    'index2token': a_lang.index2token,
+}, 'final/improved.pt')
 
 # Train BART
 print("BART")
+train_mwps, test_mwps = prepare_data()
 train_data = list(map(mwp_to_dict, train_mwps))
 test_data = list(map(mwp_to_dict, test_mwps))
 
@@ -92,10 +114,14 @@ train_dataset, test_dataset = tokenise_data(tokeniser, inputs, targets)
 
 trainer = train_model(config, model, tokeniser, train_dataset, test_dataset, test_data)
 
+print("Saving BART")
+trainer.save_model('final/bart')
+
 # print(evaluate_accuracy(model, tokeniser, inputs['test'], targets['test'], mwps['test']))
 
 # Train classifier
 print("Classifier")
+train_mwps, test_mwps = prepare_data()
 q_lang, a_lang = generate_vocab(config, train_mwps)
 
 print(q_lang.token2index)
@@ -121,5 +147,5 @@ for epoch in range(1, NUM_EPOCHS+1):
     end_time = timer()
     print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, Val acc: {val_loss:.3f}, "f"Epoch time = {(end_time - start_time):.3f}s"))
 
-
-# Test all models on test set
+print("Saving classifier")
+torch.save(classifier, 'final/classifier.pt')
