@@ -123,7 +123,22 @@ trainer.save_model('final/bart')
 """
 # Train classifier
 print("Classifier")
-train_mwps, test_mwps = prepare_data()
+all_train_mwps, all_test_mwps = prepare_data()
+train_mwps = []
+test_mwps = []
+
+for mwp in all_train_mwps:
+    if len(mwp.numbers.split(",")) <= 3:
+        if len(mwp.equation.split(" ")) <= 3:
+            train_mwps.append(mwp)
+
+for mwp in all_test_mwps:
+    if len(mwp.numbers.split(",")) <= 3:
+        if len(mwp.equation.split(" ")) <= 3:
+            test_mwps.append(mwp)
+
+print(f"# train: {len(train_mwps)}, # test: {len(test_mwps)}")
+
 q_lang, a_lang = generate_vocab(config, train_mwps)
 
 # print(q_lang.token2index)
