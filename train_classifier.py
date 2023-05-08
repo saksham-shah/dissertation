@@ -3,7 +3,7 @@ from data import *
 from config import *
 from utils.load_batches import *
 import torch
-from models.classifier import Classifier
+from models.classifier import Classifier, AttnClassifier
 from utils.prepare_tensors import *
 from timeit import default_timer as timer
 

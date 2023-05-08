@@ -147,7 +147,7 @@ train_loader = batch_data(train_mwps, True, 1) # config['batch_size']
 test_loader = batch_data(test_mwps, True, 1)
 
 # embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
-classifier = Classifier(config, q_lang.n_tokens, a_lang.n_tokens, q_lang, a_lang).to(device)
+classifier = AttnClassifier(config, q_lang.n_tokens, a_lang.n_tokens, q_lang, a_lang).to(device)
 
 optimiser = torch.optim.Adam(classifier.parameters(), lr=config['learning_rate'])
 criterion = torch.nn.BCELoss()

@@ -12,3 +12,4 @@ __pycache__
 /bart_model_trained
 /final
 /notebooks
+*.ipynb
