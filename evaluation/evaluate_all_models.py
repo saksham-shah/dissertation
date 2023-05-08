@@ -1,6 +1,6 @@
-from experiment import *
-from bart import *
-from train_classifier import *
+from evaluation.experiment import *
+from other_models import *
+# from other_models.train_classifier import *
 
 config = {
     "num_layers": 1,
@@ -63,7 +63,7 @@ def train_seq2seq(config, train_set, test_set):
     max_acc, acc, iters = trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q_lang, a_lang, 50, print_every=0)
     print(f"Accuracy: {max_acc}")
     return embedding, encoder, decoder, q_lang, a_lang
-"""
+
 # Train vanilla model
 print("Vanilla seq2seq")
 train_mwps, test_mwps = prepare_data()
@@ -120,7 +120,7 @@ print("Saving BART")
 trainer.save_model('final/bart')
 
 # print(evaluate_accuracy(model, tokeniser, inputs['test'], targets['test'], mwps['test']))
-"""
+
 # Train classifier
 print("Classifier")
 all_train_mwps, all_test_mwps = prepare_data()

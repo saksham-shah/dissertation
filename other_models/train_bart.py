@@ -8,7 +8,7 @@ print(transformers.__version__)
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, Seq2SeqTrainer
 
-from experiment import *
+from evaluation.experiment import *
 
 model_checkpoint = "facebook/bart-base"
 

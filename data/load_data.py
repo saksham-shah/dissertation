@@ -123,10 +123,10 @@ def load_data():
     ids = []
 
     # if config["dataset"] in ["asdiv", "both"]:
-    with open('data/asdiv_a.txt') as file:
+    with open('./data/asdiv/asdiv_a.txt') as file:
         asdiv_a_ids = [line.rstrip() for line in file]
     
-    tree = ET.parse('data/asdiv.xml')
+    tree = ET.parse('./data/asdiv/asdiv.xml')
     root = tree.getroot()
 
     for child in root:
@@ -141,20 +141,11 @@ def load_data():
             #     print(child.find('Formula').text + child.find('Answer').text)
     
     # if config["dataset"] in ["mawps", "both"]:
-    with open('data/mawps.json') as file:
+    with open('./data/mawps/mawps.json') as file:
         mawps = json.loads(file.read())
 
     for mawps_q in mawps:
         mwp = MWP_from_mawps(mawps_q)
-        if mwp is not None:
-            mwps[mwp.id] = mwp
-            ids.append(mwp.id)
-    
-    with open('data/svamp.json') as file:
-        svamp = json.loads(file.read())
-        
-    for svamp_q in svamp:
-        mwp = MWP_from_svamp(svamp_q)
         if mwp is not None:
             mwps[mwp.id] = mwp
             ids.append(mwp.id)

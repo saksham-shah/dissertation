@@ -1,4 +1,4 @@
-from experiment import *
+from evaluation.experiment import *
 from copy import deepcopy
 
 config = {

@@ -1,5 +1,5 @@
 import torch
-from data import *
+from data.load_data import *
 from utils.process_input import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

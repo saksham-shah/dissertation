@@ -1,11 +1,26 @@
 import random
-from data import *
-from config import *
+from data.load_data import *
 from utils.load_batches import *
 import torch
-from models.classifier import Classifier, AttnClassifier
+from models import Classifier, AttnClassifier
 from utils.prepare_tensors import *
 from timeit import default_timer as timer
+
+config = {
+    "num_layers": 1,
+    "batch_size": 1,
+    "teacher_forcing_ratio": 0.9,
+    "learning_rate": 0.0005,
+    "hidden_size": 256,
+    "bidirectional": True,
+    "dropout": 0.1,
+    "early_stopping": 5,
+    "rpn": False,
+    "num_emb": True,
+    "embedding_size": 300,
+    "dataset": ["asdiv", "mawps"],
+    "attention": True,
+}
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

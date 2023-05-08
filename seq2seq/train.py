@@ -4,7 +4,7 @@ import random
 import time
 from utils.prepare_tensors import *
 from utils.load_batches import *
-from evaluate import *
+from seq2seq.evaluate import *
 
 def train(config, input_tensor, target_tensor, input_lengths, target_lengths, numbers, embedding, encoder, decoder, embedding_optimiser, encoder_optimiser, decoder_optimiser, criterion):
     batch_size = input_tensor.shape[1]

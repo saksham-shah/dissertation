@@ -2,7 +2,7 @@ import math
 import random
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
-from data import *
+from data.load_data import *
 
 class Build_Data(Dataset):
     def __init__(self, mwps, rpn=False):

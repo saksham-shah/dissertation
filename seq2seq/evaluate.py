@@ -1,5 +1,5 @@
 import torch
-from data import *
+from data.load_data import *
 import math
 from utils.prepare_tensors import *
 from utils.rpn import *

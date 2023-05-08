@@ -2,11 +2,24 @@ import torch
 import json
 import re
 from utils.process_input import *
-from evaluate import *
-from config import *
-from models.embedding import *
-from models.encoder import *
-from models.attention import *
+from seq2seq.evaluate import *
+from models import *
+
+config = {
+    "num_layers": 1,
+    "batch_size": 1,
+    "teacher_forcing_ratio": 0.9,
+    "learning_rate": 0.0005,
+    "hidden_size": 256,
+    "bidirectional": True,
+    "dropout": 0.1,
+    "early_stopping": 5,
+    "rpn": False,
+    "num_emb": True,
+    "embedding_size": 300,
+    "dataset": ["asdiv", "mawps"],
+    "attention": True,
+}
 # def load_model(path='model/'):
 #     print("Loading...")
 #     encoder = torch.load(path + 'encoder.pt')

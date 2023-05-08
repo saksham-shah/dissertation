@@ -2,7 +2,6 @@ __pycache__
 /old
 /.vector_cache
 *.pt
-/data
 /venvs
 /old
 /facebook

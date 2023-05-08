@@ -1,10 +1,12 @@
-from models.embedding import Embedding
-from models.encoder import Encoder
-from models.decoder import Decoder
-from models.attention import AttnDecoder
-from data import *
-from train import *
-from evaluate import *
+# from models.embedding import Embedding
+# from models.encoder import Encoder
+# from models.decoder import Decoder
+# from models.attention import AttnDecoder
+from models import *
+from data.load_data import *
+from seq2seq import *
+# from seq2seq.train import *
+# from seq2seq.evaluate import *
 
 import numpy as np
 
