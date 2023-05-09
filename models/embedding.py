@@ -22,6 +22,7 @@ class Embedding(nn.Module):
 
         concat = []
 
+        # Encode numerical value
         for input in inputs:
             batches = []
             for batch in range(input.size(0)):
@@ -33,7 +34,7 @@ class Embedding(nn.Module):
                         batches.append([1, numbers[batch][index]])
                     except IndexError:
                         batches.append([0, 0])
-                else:
+                else: # if not number, just use a default value of 0
                     batches.append([0, 0])
             concat.append(batches)
         

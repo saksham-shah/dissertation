@@ -1,6 +1,5 @@
 from evaluation.experiment import *
 from other_models import *
-# from other_models.train_classifier import *
 
 config = {
     "num_layers": 1,
@@ -38,12 +37,6 @@ def prepare_data():
                 train_mwps.append(all_mwps[mwp])
 
     print(f"# train: {len(train_mwps)}, # test: {len(test_mwps)}")
-
-    # train_mwps = train_mwps[:10]
-    # test_mwps = test_mwps[:10]
-
-    # random.shuffle(train_mwps)
-    # random.shuffle(test_mwps)
     return train_mwps, test_mwps
 
 # Train seq2seq models
@@ -66,6 +59,7 @@ def train_seq2seq(config, train_set, test_set):
 
 # Train vanilla model
 print("Vanilla seq2seq")
+
 train_mwps, test_mwps = prepare_data()
 embedding, encoder, decoder, q_lang, a_lang = train_seq2seq(config, train_mwps, test_mwps)
 print("Saving baseline")
@@ -79,6 +73,7 @@ torch.save({
 
 # Train improved model
 print("Improved seq2seq")
+
 train_mwps, test_mwps = prepare_data()
 config['rpn'] = True
 config['attention'] = True
@@ -95,6 +90,8 @@ torch.save({
 
 # Train BART
 print("BART")
+
+# Prepare data in specific format needed for tokeniser
 train_mwps, test_mwps = prepare_data()
 train_data = list(map(mwp_to_dict, train_mwps))
 test_data = list(map(mwp_to_dict, test_mwps))
@@ -110,7 +107,7 @@ targets = {
 }
 
 tokeniser = AutoTokenizer.from_pretrained(model_checkpoint)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)#.to(device)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)
 
 train_dataset, test_dataset = tokenise_data(tokeniser, inputs, targets)
 
@@ -119,17 +116,17 @@ trainer = train_model(config, model, tokeniser, train_dataset, test_dataset, tes
 print("Saving BART")
 trainer.save_model('final/bart')
 
-# print(evaluate_accuracy(model, tokeniser, inputs['test'], targets['test'], mwps['test']))
-
 # Train classifier
 print("Classifier")
+
 all_train_mwps, all_test_mwps = prepare_data()
 train_mwps = []
 test_mwps = []
 
+# Filter more complicated MWPs
 for mwp in all_train_mwps:
-    if len(mwp.numbers.split(",")) <= 3:
-        if len(mwp.equation.split(" ")) <= 3:
+    if len(mwp.numbers.split(",")) <= 3: # MWPs with more than 3 numbers in question
+        if len(mwp.equation.split(" ")) <= 3: # MWPs with more than 2 numbers in equation
             train_mwps.append(mwp)
 
 for mwp in all_test_mwps:
@@ -141,28 +138,13 @@ print(f"# train: {len(train_mwps)}, # test: {len(test_mwps)}")
 
 q_lang, a_lang = generate_vocab(config, train_mwps)
 
-# print(q_lang.token2index)
-
-train_loader = batch_data(train_mwps, True, 1) # config['batch_size']
+train_loader = batch_data(train_mwps, True, 1)
 test_loader = batch_data(test_mwps, True, 1)
 
-# embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
+# Define and train classifier model
 classifier = AttnClassifier(config, q_lang.n_tokens, a_lang.n_tokens, q_lang, a_lang).to(device)
 
-optimiser = torch.optim.Adam(classifier.parameters(), lr=config['learning_rate'])
-criterion = torch.nn.BCELoss()
-
-force_correct = 0.5
-
-NUM_EPOCHS = 50
-
-for epoch in range(1, NUM_EPOCHS+1):
-    start_time = timer()
-    train_loss = train(config, classifier, train_loader, optimiser, criterion, q_lang, a_lang)
-    val_loss = evaluate(config, classifier, test_loader, q_lang, a_lang)
-    # print(f"Epoch {epoch}: loss={train_loss}")
-    end_time = timer()
-    print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, Val acc: {val_loss:.3f}, "f"Epoch time = {(end_time - start_time):.3f}s"))
+train_classifier(config, classifier, train_loader, test_loader, q_lang, a_lang, epochs=50)
 
 print("Saving classifier")
 torch.save(classifier, 'final/classifier.pt')

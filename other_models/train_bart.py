@@ -23,6 +23,7 @@ config = {
     "weight_decay": 0.01,
 }
 
+# HuggingFace uses dict rather than dataclass object
 def mwp_to_dict(mwp):
     return {
         "id": mwp.id,
@@ -32,6 +33,7 @@ def mwp_to_dict(mwp):
         "numbers": mwp.numbers,
     }
 
+# Split by testing proportion
 def train_test_split(data, test_size=0.1):
     random.seed(1)
     random.shuffle(data)
@@ -41,6 +43,7 @@ def train_test_split(data, test_size=0.1):
     test = data[boundary:]
     return { "train": train, "test": test }
 
+# Specific format for dataset: https://huggingface.co/transformers/v3.2.0/custom_datasets.html
 class MWPDataset(torch.utils.data.Dataset):
   def __init__(self, inputs, targets):
     self.inputs = inputs
@@ -50,17 +53,12 @@ class MWPDataset(torch.utils.data.Dataset):
     item = {key: torch.tensor(val[idx]) for key, val in self.inputs.items()}
     item['labels'] = torch.tensor(self.targets['input_ids'][idx])
     return item
-
-#   def __getitem__(self, idx):
-#     item = {key: torch.tensor(val[idx], device=device) for key, val in self.inputs.items()}
-#     item['labels'] = torch.tensor(self.targets['input_ids'][idx], device=device)
-#     return item
   
   def __len__(self):
     return len(self.inputs['input_ids'])
 
+# Load and split data
 def get_data(config):
-    # mwps, _, _ = load_data(config)
     mwps = prepare_training_data(config['dataset'])
     print(f"Num mwps: {len(mwps)}")
     data = list(map(mwp_to_dict, mwps))
@@ -71,6 +69,7 @@ def get_data(config):
 
     return inputs, targets, mwps
 
+# Tokenise using transformers.AutoTokenizer
 def tokenise_data(tokeniser, inputs, targets):
     max_input_length = 1024
     max_target_length = 64
@@ -90,19 +89,20 @@ def tokenise_data(tokeniser, inputs, targets):
 
     return train_dataset, test_dataset
 
+# Fine-tune BART using Seq2SeqTrainer
 def train_model(config, model, tokeniser, train_dataset, test_dataset, test_mwps):
-    batch_size = 16 # config["batch_size"]
+    batch_size = 16
     args = Seq2SeqTrainingArguments(
         f"{model_checkpoint}-finetunes-mawps",
         evaluation_strategy = "epoch",
         logging_strategy="epoch",
         save_strategy="epoch",
-        learning_rate=2e-5, # config["learning_rate"],
+        learning_rate=2e-5,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        weight_decay=0.01, # config["weight_decay"],
+        weight_decay=0.01,
         save_total_limit=3,
-        num_train_epochs=50, # config["epochs"],
+        num_train_epochs=50,
         predict_with_generate=True,
         load_best_model_at_end=True,
         metric_for_best_model="accuracy",
@@ -110,6 +110,7 @@ def train_model(config, model, tokeniser, train_dataset, test_dataset, test_mwps
 
     data_collator = DataCollatorForSeq2Seq(tokeniser, model=model)
 
+    # Compute custom evaluation metric
     def compute_metrics(tokeniser, mwps, eval_pred):
         correct = 0
 
@@ -118,11 +119,11 @@ def train_model(config, model, tokeniser, train_dataset, test_dataset, test_mwps
 
             numbers = list(map(float, mwp['numbers'].split(",")))
             answer = mwp["answer"]
-            target = mwp["equation"]
 
             pred_tokens = np.expand_dims(eval_pred.predictions[i], 0)
             pred = [tokeniser.decode(token, skip_special_tokens=True, clean_up_tokenization_spaces=False) for token in pred_tokens]
             
+            # Same evaluation as for seq2seq model
             rpn_exp = infix_to_rpn(pred[0].split(" "))
             output_ans = eval_rpn(rpn_exp, numbers)
 
@@ -149,8 +150,10 @@ def train_model(config, model, tokeniser, train_dataset, test_dataset, test_mwps
 
     return trainer
 
+# Determine if model is correct for single example
 def is_correct(model, input_tokens, target, numbers, answer, tokeniser, attempts=3):
     for _ in range(attempts):
+        # Decode tokens into text using AutoTokeniser
         pred_tokens = model.generate(input_tokens['input_ids'].to(device), num_beams=4, max_length=32, early_stopping=True)
         pred = [tokeniser.decode(token, skip_special_tokens=True, clean_up_tokenization_spaces=False) for token in pred_tokens]
 
@@ -169,6 +172,7 @@ def is_correct(model, input_tokens, target, numbers, answer, tokeniser, attempts
             return False
     return False
 
+# Evaluate and return model accuracy
 def evaluate_accuracy(model, tokeniser, inputs, targets, mwps):
     print("Evaluating...")
     correct = 0
@@ -187,19 +191,3 @@ def evaluate_accuracy(model, tokeniser, inputs, targets, mwps):
             correct += 1
 
     return correct / len(inputs)
-
-# tokeniser = AutoTokenizer.from_pretrained(model_checkpoint)
-# model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)#.to(device)
-
-# inputs, targets, mwps = get_data(config)
-# print(f"# train: {len(inputs['train'])}, # test: {len(inputs['test'])}")
-# train_dataset, test_dataset = tokenise_data(tokeniser, inputs, targets)
-
-# # print(evaluate_accuracy(model, tokeniser, inputs['test'], targets['test'], mwps['test']))
-
-# trainer = train_model(config, model, tokeniser, train_dataset, test_dataset, mwps['test'])
-
-# print("Saving...")
-# trainer.save_model('./bart_model_trained')
-
-# print(evaluate_accuracy(model, tokeniser, inputs['test'], targets['test'], mwps['test']))

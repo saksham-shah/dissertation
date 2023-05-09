@@ -67,6 +67,7 @@ class AttnClassifier(nn.Module):
         self.out = nn.Linear(hidden_2, 1)
 
     def forward(self, q_input, a_input, q_lengths, a_lengths, numbers, hidden=None):
+        # Put inputs through encoder
         q_sorted_input, q_sorted_lengths, q_restore_indexes = sort_by_length(q_input, q_lengths)
         a_sorted_input, a_sorted_lengths, a_restore_indexes = sort_by_length(a_input, a_lengths)
 
@@ -76,25 +77,22 @@ class AttnClassifier(nn.Module):
         q_output, q_hidden = self.q_encoder(q_sorted_input, q_sorted_lengths, q_restore_indexes)
         a_output, a_hidden = self.a_encoder(a_sorted_input, a_sorted_lengths, a_restore_indexes)
 
+        # Initialise decoder and compute attention weights
         q_decoder_hidden = (q_hidden[0][:self.q_encoder.num_layers], q_hidden[1][:self.q_encoder.num_layers])
         a_decoder_hidden = (a_hidden[0][:self.a_encoder.num_layers], a_hidden[1][:self.a_encoder.num_layers])
 
         q_attention_weights = self.attention(q_decoder_hidden[0], q_output)
         a_attention_weights = self.attention(a_decoder_hidden[0], a_output)
 
+        # Construct context vector
         q_context = torch.bmm(q_attention_weights.unsqueeze(1), q_output.permute(1, 0, 2))
         a_context = torch.bmm(a_attention_weights.unsqueeze(1), a_output.permute(1, 0, 2))
         q_context = q_context.permute(1, 0, 2) # 1, batch, hidden
         a_context = a_context.permute(1, 0, 2) # 1, batch, hidden
 
-        # print(q_output.shape, q_decoder_hidden[0].shape)
-        # print(a_output.shape, a_decoder_hidden[0].shape)
-
         context = torch.concat([q_context, a_context], dim=2).squeeze(0)
 
-
-        # output = torch.concat([q_output[0], a_output[0]], dim=0)
-
+        # Put through fully-connected layers
         output = torch.relu(self.fc1(context))
         output = torch.relu(self.fc2(output))
         output = torch.sigmoid(self.out(output)).squeeze(1)

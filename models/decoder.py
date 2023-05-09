@@ -26,6 +26,7 @@ class Decoder(nn.Module):
 
 
     def forward(self, inputs, hidden):
+        # Encode input into token embedding
         embedded = self.embedding(inputs.unsqueeze(0))
         embedded = self.embedding_dropout(embedded) # 1, 1, emb
 
@@ -34,9 +35,11 @@ class Decoder(nn.Module):
         except:
             embedded = embedded.view(1, 1, self.embedding_size)
 
+        # Put input through decoder
         output = F.relu(embedded)
         output, hidden = self.lstm(output, hidden) # 1, 1, hidden
 
+        # Compute output prediction
         output = output.squeeze(0)
         output = self.out(output)
         output = F.log_softmax(output, dim=1)

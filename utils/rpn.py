@@ -17,6 +17,7 @@ def do_operation(op, num1, num2):
     if op == '/':
         return num1 / num2
 
+# e.g. "#2" --> int(2)
 def getIndex(t):
     if t[0] != '#':
         return None
@@ -25,10 +26,12 @@ def getIndex(t):
     except ValueError:
         return None
 
+# Convert from infix to postfix/rpn notation
 def infix_to_rpn(tokens):
     output = []
     operators = []
     
+    # Shunting Yard algorithm
     for token in tokens:
         if is_operator(token):
             while len(operators) > 0 and is_operator(operators[-1]) and is_leq_precedence(token, operators[-1]):
@@ -47,9 +50,9 @@ def infix_to_rpn(tokens):
     
     while len(operators) > 0:
         output.append(operators.pop())
-    # print(" ".join(tokens) + " ### " + " ".join(output))
     return output
 
+# Evaluate RPN expression
 def eval_rpn(tokens, numbers):
     if tokens is None:
         return None
@@ -58,11 +61,13 @@ def eval_rpn(tokens, numbers):
     for token in tokens:
         if is_operator(token):
             if len(stack) < 2:
-                return None
+                return None # Invalid RPN expression
             num2 = stack.pop()
             num1 = stack.pop()
+
             if token == '/' and num2 == 0.0:
-                return None
+                return None # Division by zero
+            
             stack.append(do_operation(token, num1, num2))
         else:
             index = getIndex(token)
@@ -71,6 +76,6 @@ def eval_rpn(tokens, numbers):
             stack.append(numbers[index])
     
     if len(stack) != 1:
-        return None
+        return None # Invalid RPN expression
     
     return stack[0]

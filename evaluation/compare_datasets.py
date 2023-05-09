@@ -37,12 +37,6 @@ def prepare_data():
                 train_mwps.append(all_mwps[mwp])
 
     print(f"# train: {len(train_mwps)}, # test: {len(test_mwps)}")
-
-    # train_mwps = train_mwps[:10]
-    # test_mwps = test_mwps[:10]
-
-    # random.shuffle(train_mwps)
-    # random.shuffle(test_mwps)
     return train_mwps, test_mwps
 
 # Train seq2seq models
@@ -50,7 +44,7 @@ def train_seq2seq(config, train_set, test_set):
     train_set = deepcopy(train_set)
     q_lang, a_lang = generate_vocab(config, train_set)
 
-    train_loader = batch_data(train_set, config['rpn'], 1) # config['batch_size']
+    train_loader = batch_data(train_set, config['rpn'], 1)
     test_loader = batch_data(test_set, config['rpn'], 1)
 
     embedding = Embedding(config, q_lang.n_tokens, q_lang).to(device)
@@ -64,11 +58,12 @@ def train_seq2seq(config, train_set, test_set):
     print(f"Accuracy: {max_acc}")
     return embedding, encoder, decoder, q_lang, a_lang
 
-# Train improved model
-train_mwps, test_mwps = prepare_data()
+train_mwps, test_mwps = prepare_data() # List of all train and test MWPs
 
 asdiv_test = []
 mawps_test = []
+
+# Split test set by dataset
 for mwp in test_mwps:
     if mwp.id[:5] == 'asdiv':
         asdiv_test.append(mwp)
@@ -80,6 +75,7 @@ combined_loader = batch_data(test_mwps, config['rpn'], 1)
 
 print(f"TEST: # total = {len(test_mwps)}, # asdiv = {len(asdiv_test)}, # mawps = {len(mawps_test)}")
 
+# Split train set by dataset
 asdiv_mwps = []
 mawps_mwps = []
 for mwp in train_mwps:
@@ -89,10 +85,12 @@ for mwp in train_mwps:
         mawps_mwps.append(mwp)
 print(f"TRAIN: # total = {len(train_mwps)}, # asdiv = {len(asdiv_mwps)}, # mawps = {len(mawps_mwps)}")
 
+# Train model on ASDiv only
 print("ASDiv")
 
 embedding, encoder, decoder, q_lang, a_lang = train_seq2seq(config, asdiv_mwps, test_mwps)
 
+# Compute accuracies on each dataset
 asdiv_acc = accuracy(config, asdiv_loader, embedding, encoder, decoder, q_lang, a_lang)
 mawps_acc = accuracy(config, mawps_loader, embedding, encoder, decoder, q_lang, a_lang)
 combined_acc = accuracy(config, combined_loader, embedding, encoder, decoder, q_lang, a_lang)
@@ -108,18 +106,12 @@ torch.save({
     'index2token': a_lang.index2token,
 }, 'final/asdiv.pt')
 
-# Train MAWPS model
+# Train model on MAWPS only
 print("MAWPS")
-# train_mwps, test_mwps = prepare_data()
-
-# mawps_mwps = []
-# for mwp in train_mwps:
-#     if mwp.id[:5] == 'mawps':
-#         mawps_mwps.append(mwp)
-# print(f"# mawps train = {len(mawps_mwps)}")
 
 embedding, encoder, decoder, q_lang, a_lang = train_seq2seq(config, mawps_mwps, test_mwps)
 
+# Compute accuracies on each dataset
 asdiv_acc = accuracy(config, asdiv_loader, embedding, encoder, decoder, q_lang, a_lang)
 mawps_acc = accuracy(config, mawps_loader, embedding, encoder, decoder, q_lang, a_lang)
 combined_acc = accuracy(config, combined_loader, embedding, encoder, decoder, q_lang, a_lang)
@@ -135,13 +127,12 @@ torch.save({
     'index2token': a_lang.index2token,
 }, 'final/mawps.pt')
 
-# Test combined
+# Train model on all MWPs
 print("Combined")
-# train_mwps, test_mwps = prepare_data()
 
-# print(f"# combined train = {len(train_mwps)}")
 embedding, encoder, decoder, q_lang, a_lang = train_seq2seq(config, train_mwps, test_mwps)
 
+# Compute accuracies on each dataset
 asdiv_acc = accuracy(config, asdiv_loader, embedding, encoder, decoder, q_lang, a_lang)
 mawps_acc = accuracy(config, mawps_loader, embedding, encoder, decoder, q_lang, a_lang)
 combined_acc = accuracy(config, combined_loader, embedding, encoder, decoder, q_lang, a_lang)

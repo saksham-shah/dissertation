@@ -15,19 +15,16 @@ class Encoder(nn.Module):
         if config["num_emb"]:
             self.embedding_size += 2
 
-        # self.embedding = nn.Embedding(input_size, embedding_size)
-        # if weights_matrix is not None:
-        #     self.embedding.weight.data.copy_(torch.from_numpy(weights_matrix))
         self.lstm = nn.LSTM(self.embedding_size, self.hidden_size, num_layers=self.num_layers, dropout=0 if self.num_layers == 1 else config["dropout"], bidirectional=config["bidirectional"])
 
     def forward(self, embedded, input_lengths, restore_indexes, hidden=None):
-        # embedded = self.embedding(inputs)
-
+        # Pack sequences as they are different lengths
         packed = nn.utils.rnn.pack_padded_sequence(embedded, input_lengths)
         output, hidden = self.lstm(packed, hidden)
         output, _ = nn.utils.rnn.pad_packed_sequence(output)
         output = output.index_select(1, restore_indexes)
 
+        # Sum bidirectional outputs
         if self.bidirectional:
-            output = output[:, :, :self.hidden_size] + output[:, : ,self.hidden_size:] # Sum bidirectional outputs
+            output = output[:, :, :self.hidden_size] + output[:, : ,self.hidden_size:]
         return output, hidden

@@ -5,19 +5,8 @@ from torchtext.vocab import GloVe
 import numpy as np
 from utils.process_input import *
 from dataclasses import dataclass
-# from config import *
 
 global_vectors = GloVe(name='6B', dim=300)
-
-# mwps = []
-# bad_mwps = []
-# solution_types = []
-# examples = {}
-
-# chars = []
-
-# Q_MAX_LENGTH = 0
-# A_MAX_LENGTH = 0
 
 @dataclass
 class MWP:
@@ -27,14 +16,17 @@ class MWP:
     answer: float
     numbers: str
 
+# Create MWP object from question and equation strings
 def create_MWP(id, question, equation, answer):
     q_tokens, a_tokens, numbers = tokensFromMWP(question, equation)
 
+    # Filter out invalid MWPs
     if q_tokens is None:
         return None
     
     return MWP(id, " ".join(q_tokens), " ".join(a_tokens), answer, ",".join(map(str, numbers)))
 
+# Create MWP object from XML (ASDiv)
 def MWP_from_asdiv(xml_problem):
     id = xml_problem.attrib['ID']
     body = xml_problem.find('Body').text
@@ -43,16 +35,13 @@ def MWP_from_asdiv(xml_problem):
     answer = xml_problem.find('Answer').text
     formula = xml_problem.find('Formula').text
 
+    # Filter by category
     if solution_type not in ['Addition', 'Subtraction', 'Multiplication', 'Common-Division', 'Sum', 'Difference', 'TVQ-Initial', 'TVQ-Change', 'TVQ-Final']:
-        # print(solution_type)
-        # print(body + question)
-        # print(formula + "<>" + answer)
         return None
         
+    # Filter out MWPs requiring domain knowledge of units
     solution_attrib = xml_problem.find('Solution-Type').attrib
     if 'UnitTrans' in solution_attrib:
-        # print(body + question)
-        # print(formula)
         return None
     
     id = "asdiv" + str(id.split("-")[1])
@@ -61,39 +50,29 @@ def MWP_from_asdiv(xml_problem):
     answer = float(re.sub(r" \(.+\)", r"", answer))
 
     question = body + question
-    question = re.sub(r"([?$])", r" \1 ", question)
-    question = re.sub(r"([.,])([^0-9])", r" \1 \2", question)
+    question = re.sub(r"([?$])", r" \1 ", question) # add spaces before/after ? and $ characters
+    question = re.sub(r"([.,])([^0-9])", r" \1 \2", question) # add spaces before/after . and , characters IF NOT PRECEEDING NUMBER
 
     return create_MWP(id, question, equation, answer)
 
+# Create MWP object from JSON (MAWPS)
 def MWP_from_mawps(mawps):
     id = "mawps" + str(mawps["id"])
-    question = mawps["original_text"]
+    question = mawps["original_text"] # already tokenised in dataset
     answer = float(mawps["ans"])
 
+    # Filter complex equations
     if mawps["equation"].lower()[:2] != 'x=':
         return None
 
     equation = mawps["equation"].split('=')[1]
 
-    # print(question, equation, answer)
-
     return create_MWP(id, question, equation, answer)
 
-def MWP_from_svamp(svamp):
-    id = "svamp" + str(svamp["ID"].split("-")[1])
-    question = svamp["Body"] + svamp["Question"]
-    question = re.sub(r"([?$])", r" \1 ", question)
-    question = re.sub(r"([.,])([^0-9])", r" \1 \2", question)
+SOS_token = 0 # start-of-sequence
+EOS_token = 1 # end-of-sequence
 
-    answer = float(svamp["Answer"])
-    equation = svamp["Equation"]
-
-    return create_MWP(id, question, equation, answer)
-
-SOS_token = 0
-EOS_token = 1
-
+# Maintains input/output vocabularies
 class Lang:
     def __init__(self):
         self.token2index = {}
@@ -118,11 +97,13 @@ class Lang:
     def set_weights(self, weights):
         self.weights = weights
 
+# Loads data from XML and JSON files
+# Returns list of MWP objects and their IDs
 def load_data():
     mwps = {}
     ids = []
 
-    # if config["dataset"] in ["asdiv", "both"]:
+    # Load ASDiv
     with open('./data/asdiv/asdiv_a.txt') as file:
         asdiv_a_ids = [line.rstrip() for line in file]
     
@@ -135,12 +116,8 @@ def load_data():
             if mwp is not None:
                 mwps[mwp.id] = mwp
                 ids.append(mwp.id)
-            # else:
-            #     print(child.find('Body').text + child.find('Question').text)
-            #     print(child.find('Solution-Type').text)
-            #     print(child.find('Formula').text + child.find('Answer').text)
     
-    # if config["dataset"] in ["mawps", "both"]:
+    # Load MAWPS
     with open('./data/mawps/mawps.json') as file:
         mawps = json.loads(file.read())
 
@@ -152,10 +129,13 @@ def load_data():
 
     return mwps, ids
 
+# Generates input/output vocabularies
+# Returns Lang objects for input and output
 def generate_vocab(config, mwps):
-    q_lang = Lang()
-    a_lang = Lang()
+    q_lang = Lang() # input (q - question)
+    a_lang = Lang() # output (a - answer)
 
+    # Count word frequencies
     tokens = {}
     for mwp in mwps:
         for token in mwp.question.split(" "):
@@ -167,36 +147,35 @@ def generate_vocab(config, mwps):
     for mwp in mwps:
         unk_updated = []
         for token in mwp.question.split(" "):
+            # Replace low freq words with UNK (unknown token)
             if tokens[token] > 1 or token[0] == '#':
                 unk_updated.append(token)
             else:
                 unk_updated.append("UNK")
         mwp.question = " ".join(unk_updated)
 
+    # Generate Lang objects
     for mwp in mwps:
-        # q_tokens, a_tokens, _ = tokensFromMWP(mwp.question, mwp.equation)
-
         q_lang.addTokens(mwp.question.split(" "))
         a_lang.addTokens(mwp.equation.split(" "))
 
-        # if (len(mwp.question) > Q_MAX_LENGTH):
-        #     Q_MAX_LENGTH = len(mwp.question)
-        # if (len(mwp.equation) > A_MAX_LENGTH):
-        #     A_MAX_LENGTH = len(mwp.equation)
-
+    # Construct word embedding matrix for torch.nn.Embedding
     if "embedding_size" in config:
         embedding_size = config["embedding_size"]
 
         q_weights_matrix = np.zeros((q_lang.n_tokens, embedding_size))
         a_weights_matrix = np.zeros((a_lang.n_tokens, embedding_size))
 
+        # Input embeddings
         for i, token in enumerate(q_lang.token2index):
             embedding = global_vectors.get_vecs_by_tokens([token], lower_case_backup=True)[0]
             if embedding.norm() != 0:
                 q_weights_matrix[i] = embedding
             else:
+                # Initialise random vector for words without an embedding
                 q_weights_matrix[i] = np.random.normal(scale=0.6, size=(embedding_size, ))
 
+        # Repeat for output embeddings
         for i, token in enumerate(a_lang.token2index):
             embedding = global_vectors.get_vecs_by_tokens([token], lower_case_backup=True)[0]
             if embedding.norm() != 0:

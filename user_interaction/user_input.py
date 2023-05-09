@@ -20,38 +20,24 @@ config = {
     "dataset": ["asdiv", "mawps"],
     "attention": True,
 }
-# def load_model(path='model/'):
-#     print("Loading...")
-#     encoder = torch.load(path + 'encoder.pt')
-#     decoder = torch.load(path + 'decoder.pt')
-#     embedding = torch.load(path + 'embedding.pt')
 
-#     with open(path + 'token2index.json') as file:
-#         token2index = json.loads(file.read())
-
-#     with open(path + 'index2token.json') as file:
-#         index2token_str = json.loads(file.read())
-      
-#     index2token = {}
-#     for key in index2token_str:
-#       index2token[int(key)] = index2token_str[key]
-
-#     print("Loaded.")
-#     return embedding, encoder, decoder, token2index, index2token
-
+# Load model and vocabularies from .pt file
 def load_model(file):
     print("Loading...")
     model = torch.load(file, map_location=torch.device('cpu'))
-
-    # return model['embedding'].to(device), model['encoder'].to(device), model['decoder'].to(device), model['token2index'].to(device), model['index2token'].to(device)
     return model['embedding'], model['encoder'], model['decoder'], model['token2index'], model['index2token']
 
 embedding, encoder, decoder, token2index, index2token = load_model('model/rpn_both.pt')
 
 while True:
+    # Take user input
     question = input("Question: ")
+
+    # Tokenise equation
     question = re.sub(r"([.,])([^0-9])", r" \1 \2", question)
     tokens = tokenise_question(question)
+
+    # Replace numbers with abstract tokens
     numbers = []
     for i in range(len(tokens)):
         num = string_to_float(tokens[i])
@@ -59,8 +45,10 @@ while True:
             tokens[i] = "#" + str(len(numbers))
             numbers.append(num)
     
+    # Generate model output
     output_tokens, attentions = evaluate(config, embedding, encoder, decoder, tokens, [numbers], token2index, index2token)
 
+    # Evaluate output to get answer
     if output_tokens[-1] == '<EOS>':
         output_tokens.pop()    
         if config['rpn']:
@@ -69,6 +57,7 @@ while True:
             eval_output_tokens = infix_to_rpn(output_tokens)
         output_ans = eval_rpn(eval_output_tokens, numbers)
 
+    # Substitute numbers back into output
     for i in range(len(output_tokens)):
         if output_tokens[i][0] == '#':
             index = int(output_tokens[i][1:])

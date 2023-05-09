@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from data.load_data import *
 
+# torch Dataset class for batching
 class Build_Data(Dataset):
     def __init__(self, mwps, rpn=False):
         self.mwps = mwps
@@ -29,6 +30,7 @@ def batch_data(mwps, rpn=False, batch_size=1):
     dataloader = DataLoader(dataset, batch_size=batch_size)
     return dataloader
 
+# Split into folds for cross-validation
 def train_test(mwps, fold=0, nfold=10):
     left_bound = math.floor(len(mwps) * fold / nfold)
     right_bound = math.floor(len(mwps) * (fold + 1) / nfold)
@@ -38,15 +40,3 @@ def train_test(mwps, fold=0, nfold=10):
     right = mwps[right_bound:]
 
     return left + right, fold
-
-
-    # boundary = math.floor(len(mwps) * 0.9)
-    # boundary = math.floor(len(mwps) * 0.9)
-    # print(len(mwps), boundary)
-
-    # return mwps[:boundary], mwps[boundary:]
-
-    # train = batch_data(mwps[:boundary], batch_size=config["batch_size"])
-    # test = batch_data(mwps[boundary:], batch_size=1)
-    
-    # return train, test
