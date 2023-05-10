@@ -5,7 +5,7 @@ from utils.process_input import *
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Convert tokens into indexes from vocabulary
-def indexesFromTokens(token2index, tokens):
+def indexes_from_tokens(token2index, tokens):
     def index_from_token(token2index, token):
         if token in token2index:
             return token2index[token]
@@ -16,8 +16,8 @@ def indexesFromTokens(token2index, tokens):
     return indexes
 
 # Convert tokens into tensors
-def tensorFromTokens(token2index, tokens):
-    indexes = indexesFromTokens(token2index, tokens)
+def tensor_from_tokens(token2index, tokens):
+    indexes = indexes_from_tokens(token2index, tokens)
     tensor = torch.tensor(indexes, dtype=torch.long, device=device)
     return tensor
 
@@ -27,10 +27,10 @@ def pad_indexes(indexes, max_length):
     return indexes
 
 # Convert input and target to tensors for model
-def indexesFromPairs(questions, formulas, q_lang, a_lang, rpn=False):
+def indexes_from_pairs(questions, formulas, q_lang, a_lang, rpn=False):
     # Get input and target indexes
-    q_indexes = [indexesFromTokens(q_lang.token2index, q.split(" ")) for q in questions]
-    a_indexes = [indexesFromTokens(a_lang.token2index, a.split(" ")) for a in formulas]
+    q_indexes = [indexes_from_tokens(q_lang.token2index, q.split(" ")) for q in questions]
+    a_indexes = [indexes_from_tokens(a_lang.token2index, a.split(" ")) for a in formulas]
 
     numbers = []
 

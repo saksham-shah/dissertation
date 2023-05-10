@@ -75,7 +75,7 @@ def evaluate(config, model, test_loader, q_lang, a_lang):
     correct = 0
 
     for mwp in test_loader:
-        q_tensor = tensorFromTokens(q_lang.token2index, mwp['question'][0].split(" ")).view(-1, 1)
+        q_tensor = tensor_from_tokens(q_lang.token2index, mwp['question'][0].split(" ")).view(-1, 1)
         numbers = list(map(float, mwp['numbers'][0].split(",")))
 
         max_output = 0
@@ -83,7 +83,7 @@ def evaluate(config, model, test_loader, q_lang, a_lang):
 
         # Get match confidence for all possible equations
         for equation in all_equations:
-            a_tensor = tensorFromTokens(a_lang.token2index, equation.split(" ")).view(-1, 1)
+            a_tensor = tensor_from_tokens(a_lang.token2index, equation.split(" ")).view(-1, 1)
             output = model(q_tensor, a_tensor, [q_tensor.size(0)], [a_tensor.size(0)], [numbers])
 
             # Select equation with highest confidence
@@ -108,7 +108,7 @@ def train(config, model, train_loader, optimiser, criterion, q_lang, a_lang):
 
     for mwp in train_loader:
         # Prepare question tensor
-        q_indexes = [indexesFromTokens(q_lang.token2index, q.split(" ")) for q in mwp['question']]
+        q_indexes = [indexes_from_tokens(q_lang.token2index, q.split(" ")) for q in mwp['question']]
         q_lengths = [len(q) for q in q_indexes]
         q_padded = [pad_indexes(q, max(q_lengths)) for q in q_indexes]
         q_tensor = torch.tensor(q_padded, device=device).transpose(0, 1)
@@ -122,7 +122,7 @@ def train(config, model, train_loader, optimiser, criterion, q_lang, a_lang):
             target = [1.0 if is_equivalent(a, equation) else 0.0 for a in a_strings]
             
             # Prepare equation (answer) tensor
-            a_indexes = [indexesFromTokens(a_lang.token2index, a.split(" ")) for a in a_strings]
+            a_indexes = [indexes_from_tokens(a_lang.token2index, a.split(" ")) for a in a_strings]
             a_lengths = [len(a) for a in a_indexes]
             a_padded = [pad_indexes(a, max(a_lengths)) for a in a_indexes]
             a_tensor = torch.tensor(a_padded, device=device).transpose(0, 1)

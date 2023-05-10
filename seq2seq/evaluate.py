@@ -10,7 +10,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def evaluate(config, embedding, encoder, decoder, tokens, numbers, token2index, index2token, max_length = 120):
     with torch.no_grad():
         # Convert tokens to tensor
-        input_tensor = tensorFromTokens(token2index, tokens).view(-1, 1)
+        input_tensor = tensor_from_tokens(token2index, tokens).view(-1, 1)
         input_length = input_tensor.size()[0]
         
         # Embed token embeddings and pass into encoder

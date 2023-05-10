@@ -18,7 +18,7 @@ class MWP:
 
 # Create MWP object from question and equation strings
 def create_MWP(id, question, equation, answer):
-    q_tokens, a_tokens, numbers = tokensFromMWP(question, equation)
+    q_tokens, a_tokens, numbers = tokens_from_MWP(question, equation)
 
     # Filter out invalid MWPs
     if q_tokens is None:

@@ -27,7 +27,7 @@ def tokenise_formula(s):
     return s.strip().split(" ")
 
 # Convert MWP to tokens
-def tokensFromMWP(question, formula):
+def tokens_from_MWP(question, formula):
     q_tokens = tokenise_question(question)
     a_tokens = tokenise_formula(formula)
 

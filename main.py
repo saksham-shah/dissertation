@@ -167,7 +167,7 @@ def accuracy(config, test_set):
     correct = 0
     incorrect = 0
     for mwp in test_set:
-        # q_tokens, a_tokens, numbers = tokensFromMWP(mwp.question, mwp.equation)
+        # q_tokens, a_tokens, numbers = tokens_from_MWP(mwp.question, mwp.equation)
         a_tokens = mwp['formula'][0].split(" ")
         numbers = list(map(float, mwp['numbers'][0].split(",")))
 

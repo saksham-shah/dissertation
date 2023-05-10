@@ -92,7 +92,7 @@ def trainIters(config, train_loader, test_loader, embedding, encoder, decoder, q
     for iter in range(1, n_iters + 1):
         for mwp in train_loader:
             # Prepare input and target tensors
-            input_tensor, target_tensor, input_lengths, target_lengths, numbers = indexesFromPairs(mwp['question'], mwp['formula'], q_lang, a_lang, config["rpn"])
+            input_tensor, target_tensor, input_lengths, target_lengths, numbers = indexes_from_pairs(mwp['question'], mwp['formula'], q_lang, a_lang, config["rpn"])
             count += 1
 
             numbers = [list(map(float, nums.split(","))) for nums in mwp['numbers']]
