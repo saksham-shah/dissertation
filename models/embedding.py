@@ -29,7 +29,7 @@ class Embedding(nn.Module):
                 token = self.lang.index2token[input[batch].item()]
                 if token[0] == '#':
                     index = int(token[1:])
-                    batch = restore_indexes[batch]
+                    batch = restore_indexes[batch] # get numeric value
                     try:
                         batches.append([1, numbers[batch][index]])
                     except IndexError:
